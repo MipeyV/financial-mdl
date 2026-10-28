@@ -80,12 +80,21 @@ class SklearnAdapter:
         if y.shape != (len(X),) or not np.isfinite(y).all():
             raise ValueError("Scalar estimators require finite training targets of shape (N,)")
         self.columns_ = tuple(X.columns)
+        if hasattr(self, "constant_"):
+            del self.constant_
+        if not self.columns_:
+            if not isinstance(self.estimator, Ridge):
+                raise ValueError("This adapter supports empty feature subsets only for Ridge")
+            self.constant_ = float(y.mean())
+            return self
         self.estimator.fit(X, y)
         return self
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         if not hasattr(self, "columns_") or tuple(X.columns) != self.columns_:
             raise ValueError("Estimator must be fitted with matching ordered columns")
+        if hasattr(self, "constant_"):
+            return np.full(len(X), self.constant_)
         values = np.asarray(self.estimator.predict(X))
         if values.shape != (len(X),):
             raise ValueError("Scalar estimator must return exactly shape (N,)")
@@ -96,6 +105,11 @@ class SklearnAdapter:
     def get_params(self) -> dict[str, Any]:
         return {
             "adapter": "sklearn_scalar_v1",
+            "effective_model": (
+                "intercept_only_training_mean"
+                if hasattr(self, "constant_")
+                else "configured_estimator"
+            ),
             "estimator": f"{type(self.estimator).__module__}.{type(self.estimator).__qualname__}",
             "parameters": self.estimator.get_params(deep=True),
         }
@@ -104,6 +118,8 @@ class SklearnAdapter:
         """Optional fitted diagnostics, with their meaning preserved explicitly."""
         if not hasattr(self, "columns_"):
             raise ValueError("Estimator has not been fitted")
+        if hasattr(self, "constant_"):
+            return None
         if hasattr(self.estimator, "feature_importances_"):
             kind, values = "impurity_importance", self.estimator.feature_importances_
         elif hasattr(self.estimator, "coef_"):

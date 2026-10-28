@@ -34,3 +34,33 @@ def synthetic_market(n: int = 360, seed: int = 42) -> MarketDataset:
             "2020-01-01T00:00:00+00:00",
         ),
     )
+
+
+def controlled_regression(scenario: str, seed: int, n: int) -> tuple[pd.DataFrame, np.ndarray]:
+    """Independent regression observations; a control experiment, not market forecasts.
+
+    signal_a_copy is exactly redundant. The three noise columns are independent
+    of both true signals. A fixed seed shares the design/noise across scenarios.
+    """
+    if scenario not in {"signal", "noise_only", "weak_signal"}:
+        raise ValueError("Unknown controlled-regression scenario")
+    if type(n) is not int or n < 4 or type(seed) is not int or seed < 0:
+        raise ValueError("Require n >= 4 and a nonnegative integer seed")
+    rng = np.random.default_rng(seed)
+    values = rng.normal(size=(n, 5))
+    X = pd.DataFrame(
+        {
+            "signal_a": values[:, 0],
+            "signal_b": values[:, 1],
+            "signal_a_copy": values[:, 0],
+            "noise_0": values[:, 2],
+            "noise_1": values[:, 3],
+            "noise_2": values[:, 4],
+        }
+    )
+    y = 1.0 + 0.4 * rng.normal(size=n)
+    if scenario == "signal":
+        y += 2.0 * values[:, 0] - 1.5 * values[:, 1]
+    elif scenario == "weak_signal":
+        y += 0.05 * values[:, 0]
+    return X, y

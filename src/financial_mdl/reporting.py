@@ -92,3 +92,44 @@ def training_figures(market: pd.DataFrame, X_train: pd.DataFrame, directory: Pat
         directory,
         "correlations",
     )
+
+
+def mdl_figures(selection: dict, directory: Path) -> None:
+    """Training reference-code diagnostics, never per-subset validation scores."""
+    directory.mkdir(parents=True, exist_ok=True)
+    decomposition = []
+    for reference in ("selected", "full", "constant"):
+        for component in ("subset_bits", "model_bits", "target_bits"):
+            decomposition.append(
+                {
+                    "reference": reference,
+                    "component": component,
+                    "bits": selection[reference][component],
+                }
+            )
+    save_figure(
+        px.bar(
+            pd.DataFrame(decomposition),
+            x="reference",
+            y="bits",
+            color="component",
+            title="MDL training reference code: decomposition",
+        ),
+        directory,
+        "mdl_decomposition",
+    )
+    candidates = pd.DataFrame(selection["candidates"])
+    candidates["representation_bits"] = candidates.subset_bits + candidates.model_bits
+    candidates["features"] = candidates.features.map(lambda names: ", ".join(names) or "constant")
+    save_figure(
+        px.scatter(
+            candidates,
+            x="representation_bits",
+            y="training_rmse",
+            color="n_features",
+            hover_data=["features", "total_bits"],
+            title="MDL training candidates: representation cost versus error",
+        ),
+        directory,
+        "mdl_complexity_error",
+    )

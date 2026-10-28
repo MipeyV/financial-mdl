@@ -37,3 +37,4 @@ def fast_reports(monkeypatch):
     # Real report generation is exercised by the CLI smoke test.
     monkeypatch.setattr("financial_mdl.benchmark.forecast_figures", lambda *args: None)
     monkeypatch.setattr("financial_mdl.benchmark.training_figures", lambda *args: None)
+    monkeypatch.setattr("financial_mdl.benchmark.mdl_figures", lambda *args: None)

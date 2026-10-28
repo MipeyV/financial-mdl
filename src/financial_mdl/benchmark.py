@@ -33,7 +33,7 @@ from financial_mdl.features import (
 from financial_mdl.forecasting import ForecastingModel, OneStepStrategy
 from financial_mdl.metrics import evaluate
 from financial_mdl.protocol import BenchmarkConfig
-from financial_mdl.reporting import forecast_figures, save_figure, training_figures
+from financial_mdl.reporting import forecast_figures, mdl_figures, save_figure, training_figures
 from financial_mdl.schemas import Forecast, Targets
 from financial_mdl.splitting import chronological_partitions
 from financial_mdl.targets import future_volatility
@@ -96,7 +96,7 @@ def _provenance() -> dict:
 def _validate_frame(frame: pd.DataFrame, expected: pd.DataFrame, columns: tuple) -> None:
     if not isinstance(frame, pd.DataFrame) or not frame.index.equals(expected.index):
         raise ValueError("Fitted components must preserve the exact feature row index")
-    if tuple(frame.columns) != columns or not columns:
+    if tuple(frame.columns) != columns:
         raise ValueError("Fitted components must preserve declared feature columns and order")
     if not np.isfinite(frame.to_numpy(dtype=float)).all():
         raise ValueError("Fitted components must produce finite features")
@@ -190,11 +190,10 @@ class BenchmarkRunner:
         selected = selector.get_selected_features()
         if (
             not isinstance(selected, tuple)
-            or not selected
             or len(set(selected)) != len(selected)
             or any(name not in protocol.feature_names for name in selected)
         ):
-            raise ValueError("Selector must declare a nonempty unique subset of protocol features")
+            raise ValueError("Selector must declare a unique subset of protocol features")
         selected_train, selected_eval = selector.transform(X_train), selector.transform(X_eval)
         _validate_frame(selected_train, X_train, selected)
         _validate_frame(selected_eval, X_eval, selected)
@@ -225,9 +224,16 @@ class BenchmarkRunner:
                 "origin_end": c.origins[positions[-1]].isoformat(),
                 "label_end": str(c.target_timestamps[positions].max()),
             }
+        selector_params = selector.get_params()
+        selection_suffix = (
+            ""
+            if selector_params.get("name") == "identity"
+            else f"-{selector_params.get('name', 'custom')}"
+        )
         metadata = {
             "run_name": (
-                f"{protocol.benchmark_id}-v{protocol.version}-{estimator_name}-{phase}-s{seed}"
+                f"{protocol.benchmark_id}-v{protocol.version}-{estimator_name}"
+                f"{selection_suffix}-{phase}-s{seed}"
             ),
             "benchmark_id": protocol.benchmark_id,
             "benchmark_version": protocol.version,
@@ -240,7 +246,7 @@ class BenchmarkRunner:
             "estimator_name": estimator_name,
             "estimator": [estimator.get_params() for estimator in estimators],
             "strategy": strategy.get_params(),
-            "selector": selector.get_params(),
+            "selector": selector_params,
             "transformer": transformer.get_params(),
             "selected_features": selected,
             "feature_families": protocol.feature_families,
@@ -257,6 +263,16 @@ class BenchmarkRunner:
         (output / "run.json").write_text(serialized, encoding="utf-8")
         (output / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
         table.to_parquet(output / "predictions.parquet", index=False)
+        selection = None
+        selection_method = getattr(selector, "get_diagnostics", None)
+        if callable(selection_method):
+            selection = selection_method()
+            (output / "selection.json").write_text(
+                json.dumps(selection, indent=2, allow_nan=False), encoding="utf-8"
+            )
+            pd.DataFrame(selection["candidates"]).to_parquet(
+                output / "mdl_candidates.parquet", index=False
+            )
         diagnostics = []
         for index, estimator in enumerate(estimators):
             method = getattr(estimator, "get_feature_importance", None)
@@ -270,6 +286,8 @@ class BenchmarkRunner:
         figures = output / "figures"
         forecast_figures(table, figures)
         training_figures(frame.loc[X_train.index], X_train, figures)
+        if selection is not None:
+            mdl_figures(selection, figures)
         self.tracker.record(metadata, metrics, str(output))
         return BenchmarkResult(output, metrics, metadata)
 
@@ -289,12 +307,19 @@ def compare_runs(
     rows = []
     for directory, run in zip(directories, runs, strict=True):
         metrics = json.loads((Path(directory) / "metrics.json").read_text(encoding="utf-8"))
-        rows.append({"run": str(directory), "estimator": run["estimator_name"], **metrics})
+        rows.append(
+            {
+                "run": str(directory),
+                "estimator": run["estimator_name"],
+                "selector": run["selector"]["name"],
+                **metrics,
+            }
+        )
     leaderboard = pd.DataFrame(rows)
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
     leaderboard.to_csv(output / "leaderboard.csv", index=False)
-    metric = next(key for key in rows[0] if key not in {"run", "estimator"})
+    metric = next(key for key in rows[0] if key not in {"run", "estimator", "selector"})
     save_figure(
         px.bar(
             leaderboard,
@@ -324,7 +349,7 @@ def compare_runs(
             f"candidate_{i}/{name}": value
             for i, row in enumerate(rows)
             for name, value in row.items()
-            if name not in {"run", "estimator"}
+            if name not in {"run", "estimator", "selector"}
         }
         tracker.record(metadata, scores, str(output))
     return leaderboard

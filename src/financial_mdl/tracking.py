@@ -69,6 +69,25 @@ class LocalMLflowTracker:
                 # Full metadata is always retained in run.json, including large parameter maps.
                 encoded = json.dumps(value, sort_keys=True)
                 client.log_param(run_id, key, encoded[:5000])
+            if metadata["estimator_name"] != "comparison":
+                client.log_param(run_id, "estimator_name", metadata["estimator_name"])
+                client.log_param(run_id, "selector_name", metadata["selector"]["name"])
+                client.log_param(run_id, "n_selected_features", len(metadata["selected_features"]))
+            selection_path = Path(directory) / "selection.json"
+            if selection_path.exists():
+                selection = json.loads(selection_path.read_text(encoding="utf-8"))
+                client.log_param(
+                    run_id,
+                    "mdl_target_precision",
+                    selection["coding_spec"]["target_precision"],
+                )
+                for reference in ("selected", "full", "constant"):
+                    for component in ("subset_bits", "model_bits", "target_bits", "total_bits"):
+                        client.log_metric(
+                            run_id,
+                            f"training/mdl/{reference}/{component}",
+                            selection[reference][component],
+                        )
             for key, value in metrics.items():
                 client.log_metric(run_id, f"{metadata['phase']}/{key}", value)
             client.log_artifacts(run_id, directory)
