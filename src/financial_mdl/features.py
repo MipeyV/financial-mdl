@@ -106,6 +106,22 @@ class IdentityFeatureSelector:
         return {"name": "identity", "version": "1"}
 
 
+class IdentityFeatures:
+    """Preserve original feature units for predictors such as volatility persistence."""
+
+    def fit(self, X: pd.DataFrame) -> IdentityFeatures:
+        self.columns_ = tuple(X.columns)
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        if not hasattr(self, "columns_") or tuple(X.columns) != self.columns_:
+            raise ValueError("Transformer must be fitted with matching ordered columns")
+        return X.copy()
+
+    def get_params(self) -> dict[str, Any]:
+        return {"name": "identity", "version": "1"}
+
+
 class StandardizeFeatures:
     """Example fitted transform. The runner fits a fresh instance on training only."""
 
@@ -117,7 +133,9 @@ class StandardizeFeatures:
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         if not hasattr(self, "scaler_") or tuple(X.columns) != self.columns_:
             raise ValueError("Transformer must be fitted with matching ordered columns")
-        return pd.DataFrame(self.scaler_.transform(X), index=X.index, columns=X.columns)
+        result = pd.DataFrame(self.scaler_.transform(X), index=X.index, columns=X.columns)
+        result.attrs = {**X.attrs, "feature_transform": "standard_scaler"}
+        return result
 
     def get_params(self) -> dict[str, Any]:
         return {"name": "standard_scaler", "version": "1", "with_mean": True, "with_std": True}

@@ -22,7 +22,8 @@ Kedro is deliberately not a runtime dependency in this initial empty repository.
 | `targets` | Future volatility from complete future log-return windows, independently of models |
 | `schemas` | Frozen target specification; validated forecast coordinates, label windows, and `(N,H,K)` values |
 | `contracts` | `BaseModel`, `FeatureSelector`, `FeatureTransformer`, `ForecastStrategy`, `Tracker` Protocols |
-| `models` | Scalar scikit-learn adapter; training-mean baseline, Ridge, seeded random forest |
+| `models` | Scalar scikit-learn adapter; training-mean baseline, Ridge, seeded random forest, trailing volatility persistence |
+| `candidates` | Pair built-in estimator factories with preprocessing that respects input units |
 | `forecasting` | `ForecastingModel(estimator=factory, strategy=...)`; single-output and direct strategies |
 | `protocol` | Frozen benchmark/target/split rules, canonical JSON and SHA-256 |
 | `splitting` | Deterministic chronological holdout, label-window purging, optional extra session gap |
@@ -38,7 +39,9 @@ maps these to `(N,1,1)`; it never guesses from total element count.
 `FeatureSelector`: `fit(X_train, y_train)`, `transform(X)`, `get_selected_features()`,
 `get_params()`. The target supplied to selectors is explicitly `(N,H,K)`.
 `FeatureTransformer`: `fit(X_train)`, `transform(X)`, `get_params()`; it preserves labeled rows
-and columns. Identity selection and standardization are implemented. No fit is allowed on
+and columns. Identity selection, identity transformation and standardization are implemented.
+Standardized DataFrames carry a transform marker so a persistence model can reject inputs
+whose volatility units were changed. No fit is allowed on
 evaluation observations. Custom components must return new instances through factories.
 
 `ForecastStrategy`: `fit(estimator_factory, X, Targets)`,
@@ -62,16 +65,22 @@ from pathlib import Path
 
 from financial_mdl.benchmark import BenchmarkRunner
 from financial_mdl.data import ParquetMarketDataProvider
-from financial_mdl.models import make_estimator
+from financial_mdl.candidates import make_candidate
 from financial_mdl.protocol import BenchmarkConfig
 
 dataset = ParquetMarketDataProvider(Path("data/spy.parquet")).load()
-protocol = BenchmarkConfig.load(Path("protocols/spy-volatility-v1.json"))
-for name in ("naive", "ridge"):
+protocol = BenchmarkConfig.load(Path("protocols/spy-local-volatility-v1.json"))
+for name in ("naive", "persistence-5", "persistence-20", "ridge"):
+    estimator, transformer = make_candidate(
+        name,
+        seed=42,
+        annualization=protocol.target.annualization,
+    )
     BenchmarkRunner().run(
         dataset,
         protocol,
-        estimator_factory=lambda name=name: make_estimator(name, seed=42),
+        estimator_factory=estimator,
+        transformer_factory=transformer,
         output=Path("artifacts") / f"python-{name}",
         estimator_name=name,
     )
@@ -82,6 +91,13 @@ selector. The protocol is unchanged. An alternative feature universe, target, da
 observation policy or evaluation period is a **new protocol**, not a model hyperparameter.
 To compare feature subsets under matched origins, authorize a common complete-case feature
 universe and use selectors within that universe. Incompatible protocols are never pooled.
+
+Persistence copies `realized_volatility_5` or `realized_volatility_20` from the current origin.
+The estimator does not estimate parameters from target values. These source features use
+annualization 252; predictions multiply them by `sqrt(target_annualization / 252)` when
+needed. The CLI and Kedro node pass the target scale from the saved protocol. Direct models
+reuse the same current volatility estimate for every requested horizon. The feature-eligibility
+mask, chronological splits, target construction and evaluation metrics remain unchanged.
 
 ## Temporal correctness and practical limits
 

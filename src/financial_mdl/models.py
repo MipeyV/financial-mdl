@@ -11,6 +11,64 @@ from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import Ridge
 
+from financial_mdl.contracts import BaseModel
+
+PERSISTENCE_WINDOWS = {"persistence-5": 5, "persistence-20": 20}
+ESTIMATOR_NAMES = ("naive", "ridge", "tree", *PERSISTENCE_WINDOWS)
+
+
+class VolatilityPersistence:
+    """Copy a trailing RMS volatility feature at each origin, without learning from y.
+
+    Source features use annualization=252. Convert explicitly to the target's
+    annualization. Every future horizon receives the same current volatility estimate.
+    Inputs must retain original volatility units; use IdentityFeatures in the runner.
+    """
+
+    def __init__(self, window: int, annualization: int = 252):
+        if type(window) is not int or window not in (5, 20):
+            raise ValueError("Persistence window must be 5 or 20 sessions")
+        if type(annualization) is not int or annualization < 1:
+            raise ValueError("annualization must be a positive integer")
+        self.window = window
+        self.annualization = annualization
+        self.feature = f"realized_volatility_{window}"
+
+    def _values(self, X: pd.DataFrame) -> np.ndarray:
+        if X.attrs.get("feature_transform") == "standard_scaler":
+            raise ValueError("Persistence requires original feature units; use IdentityFeatures")
+        if not X.columns.is_unique or self.feature not in X.columns:
+            raise ValueError(f"Persistence requires feature {self.feature!r}")
+        values = X[self.feature].to_numpy(dtype=float)
+        if not np.isfinite(values).all() or (values < 0).any():
+            raise ValueError("Persistence requires finite nonnegative volatility features")
+        return values * np.sqrt(self.annualization / 252)
+
+    def fit(self, X: pd.DataFrame, y: np.ndarray) -> VolatilityPersistence:
+        if X.empty or y.shape != (len(X),) or not np.isfinite(y).all():
+            raise ValueError("Persistence training targets must have finite shape (N,)")
+        self._values(X)
+        self.columns_ = tuple(X.columns)
+        return self
+
+    def predict(self, X: pd.DataFrame) -> np.ndarray:
+        if not hasattr(self, "columns_") or tuple(X.columns) != self.columns_:
+            raise ValueError("Estimator must be fitted with matching ordered columns")
+        return self._values(X)
+
+    def get_params(self) -> dict[str, Any]:
+        return {
+            "estimator": "volatility_persistence",
+            "version": "1",
+            "parameters": {
+                "window_sessions": self.window,
+                "feature": self.feature,
+                "source_annualization": 252,
+                "target_annualization": self.annualization,
+                "learns_from_targets": False,
+            },
+        }
+
 
 class SklearnAdapter:
     """Clone an external estimator; require explicitly scalar (N,) predictions."""
@@ -57,7 +115,9 @@ class SklearnAdapter:
         return {"kind": kind, "features": dict(zip(self.columns_, values.tolist(), strict=True))}
 
 
-def make_estimator(name: str, seed: int = 42) -> SklearnAdapter:
+def make_estimator(name: str, seed: int = 42, annualization: int = 252) -> BaseModel:
+    if name in PERSISTENCE_WINDOWS:
+        return VolatilityPersistence(PERSISTENCE_WINDOWS[name], annualization=annualization)
     estimators = {
         "naive": lambda: DummyRegressor(strategy="mean"),
         "ridge": lambda: Ridge(alpha=1.0),
@@ -70,5 +130,5 @@ def make_estimator(name: str, seed: int = 42) -> SklearnAdapter:
         ),
     }
     if name not in estimators:
-        raise ValueError(f"Unknown estimator {name!r}; choose from {tuple(estimators)}")
+        raise ValueError(f"Unknown estimator {name!r}; choose from {ESTIMATOR_NAMES}")
     return SklearnAdapter(estimators[name]())

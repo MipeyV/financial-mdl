@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from financial_mdl.benchmark import BenchmarkRunner, compare_runs
+from financial_mdl.candidates import make_candidate
 from financial_mdl.cli import main
 from financial_mdl.models import make_estimator
 from financial_mdl.tracking import LocalMLflowTracker
@@ -84,3 +85,16 @@ def test_real_local_mlflow_records_params_metrics_and_predictions(
     assert "leaderboard.csv" in {
         Path(a.path).name for a in client.list_artifacts(comparison.info.run_id)
     }
+    estimator, transformer = make_candidate("persistence-20")
+    persistence = BenchmarkRunner(tracker).run(
+        dataset,
+        protocol,
+        estimator,
+        tmp_path / "persistence",
+        estimator_name="persistence-20",
+        transformer_factory=transformer,
+    )
+    runs = client.search_runs([experiment.experiment_id])
+    logged = next(r for r in runs if "persistence-20" in r.data.tags["mlflow.runName"])
+    assert logged.data.metrics["validation/rmse"] == persistence.metrics["rmse"]
+    assert json.loads(logged.data.params["transformer"])["name"] == "identity"
