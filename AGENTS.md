@@ -6,8 +6,9 @@
 - Never commit or push changes directly to `main`. Keep each branch focused on one change.
 - Run the relevant tests and both Ruff checks before committing. CI uses the locked uv
   environment; keep `uv.lock` consistent with `pyproject.toml`.
-- Push the working branch and open a pull request targeting `main`. Describe the resulting
-  behavior and the validation performed. Address failed CI checks on that same branch.
+- Push the working branch and provide its summary and validation results. The user creates
+  pull requests targeting `main`; open a PR only when explicitly asked. Address failed CI
+  checks on the same branch.
 - Merge a pull request only when the user explicitly asks. A request to commit, push, or
   open a PR does not authorize merging it.
 - Preserve the benchmark's scientific rules: candidate configuration stays separate from

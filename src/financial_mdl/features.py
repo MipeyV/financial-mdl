@@ -127,13 +127,17 @@ class StandardizeFeatures:
 
     def fit(self, X: pd.DataFrame) -> StandardizeFeatures:
         self.columns_ = tuple(X.columns)
-        self.scaler_ = StandardScaler().fit(X)
+        self.scaler_ = StandardScaler().fit(X) if len(self.columns_) else None
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         if not hasattr(self, "scaler_") or tuple(X.columns) != self.columns_:
             raise ValueError("Transformer must be fitted with matching ordered columns")
-        result = pd.DataFrame(self.scaler_.transform(X), index=X.index, columns=X.columns)
+        result = (
+            pd.DataFrame(self.scaler_.transform(X), index=X.index, columns=X.columns)
+            if self.scaler_ is not None
+            else X.copy()
+        )
         result.attrs = {**X.attrs, "feature_transform": "standard_scaler"}
         return result
 

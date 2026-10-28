@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from functools import partial
 from pathlib import Path
 
 from financial_mdl.benchmark import BenchmarkRunner, compare_runs
@@ -10,6 +11,8 @@ from financial_mdl.candidates import make_candidate
 from financial_mdl.data import ParquetMarketDataProvider, YFinanceMarketDataProvider
 from financial_mdl.experiments import synthetic_market
 from financial_mdl.forecasting import DirectMultiHorizonStrategy, OneStepStrategy
+from financial_mdl.mdl import ExhaustiveMDLSelector, MDLCodingSpec
+from financial_mdl.mdl_experiment import run_synthetic_mdl
 from financial_mdl.models import ESTIMATOR_NAMES
 from financial_mdl.protocol import BenchmarkConfig, TemporalSplit
 from financial_mdl.schemas import TargetSpec
@@ -42,6 +45,8 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--strategy", choices=["one-step", "direct"], default="one-step")
     run.add_argument("--phase", choices=["validation", "test"], default="validation")
     run.add_argument("--seed", type=int, default=42)
+    run.add_argument("--selector", choices=["identity", "mdl"], default="identity")
+    run.add_argument("--mdl-target-precision", type=float, default=0.0001)
     run.add_argument("--tracking", action="store_true")
     run.add_argument("--tracking-root", type=Path, default=Path("artifacts/mlflow"))
     compare = commands.add_parser("compare", help="Reject incompatible run comparisons")
@@ -51,6 +56,9 @@ def parser() -> argparse.ArgumentParser:
     compare.add_argument("--tracking-root", type=Path, default=Path("artifacts/mlflow"))
     demo = commands.add_parser("demo", help="Offline synthetic smoke example only")
     demo.add_argument("--output", type=Path, default=Path("artifacts/demo"))
+    synthetic = commands.add_parser("mdl-synthetic", help="Run independent synthetic MDL controls")
+    synthetic.add_argument("--output", type=Path, required=True)
+    synthetic.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     return root
 
 
@@ -93,6 +101,14 @@ def _execute(args: argparse.Namespace) -> None:
             args.seed,
             annualization=protocol.target.annualization,
         )
+        selector_kwargs = {}
+        if args.selector == "mdl":
+            if args.estimator != "ridge":
+                raise ValueError("MDL CLI v1 evaluates the fixed Ridge reference estimator")
+            selector_kwargs["selector_factory"] = partial(
+                ExhaustiveMDLSelector,
+                MDLCodingSpec(target_precision=args.mdl_target_precision),
+            )
         result = BenchmarkRunner(tracker).run(
             ParquetMarketDataProvider(args.data).load(),
             protocol,
@@ -105,11 +121,15 @@ def _execute(args: argparse.Namespace) -> None:
             strategy_factory=(
                 OneStepStrategy if args.strategy == "one-step" else DirectMultiHorizonStrategy
             ),
+            **selector_kwargs,
         )
         print(f"{args.phase}: {result.metrics}; artifacts: {result.directory}")
     elif args.command == "compare":
         tracker = LocalMLflowTracker(args.tracking_root) if args.tracking else None
         print(compare_runs(args.runs, args.output, tracker).to_string(index=False))
+    elif args.command == "mdl-synthetic":
+        results = run_synthetic_mdl(args.output, seeds=tuple(args.seeds))
+        print(results.groupby(["scenario", "method"])[["n_features", "rmse", "total_bits"]].mean())
     elif args.command == "demo":
         args.output.mkdir(parents=True, exist_ok=False)
         data = synthetic_market()

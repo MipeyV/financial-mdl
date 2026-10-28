@@ -2,8 +2,8 @@
 
 A financial ML **research framework**, investigating whether compact representations
 selected using Minimum Description Length preserve out-of-sample predictive performance.
-This initial implementation establishes reproducible forecasting and benchmark contracts;
-it does not implement an MDL selector or claim to measure Kolmogorov complexity.
+The implementation includes reproducible forecasting contracts and a first exhaustive MDL
+selector with an explicit two-part reference code. It does not measure Kolmogorov complexity.
 
 ## Setup and verification
 
@@ -83,6 +83,28 @@ For an offline smoke example only:
 ```powershell
 uv run financial-mdl demo --output artifacts/demo
 ```
+
+## MDL feature selection
+
+The scalar Ridge reference selector evaluates every feature subset, including the constant
+model, using an explicit subset code, binary64 model parameters and an integer residual code.
+It fits entirely on training data. The default target precision is fixed at 0.0001; the five
+market features produce 32 candidates. Full Ridge and Ridge with MDL use the same saved
+benchmark protocol and unrounded evaluation targets:
+
+```powershell
+uv run financial-mdl run --data data/spy.parquet --protocol protocols/spy-volatility-v1.json --estimator ridge --output artifacts/spy-mdl-v1/full --tracking
+uv run financial-mdl run --data data/spy.parquet --protocol protocols/spy-volatility-v1.json --estimator ridge --selector mdl --output artifacts/spy-mdl-v1/mdl --tracking
+uv run financial-mdl compare artifacts/spy-mdl-v1/full artifacts/spy-mdl-v1/mdl --output artifacts/spy-mdl-v1/comparison --tracking
+uv run financial-mdl mdl-synthetic --output artifacts/mdl-synthetic-v1 --seeds 0 1 2 3 4
+```
+
+These commands use the original frozen snapshot. Substitute your own saved protocol for a
+fresh download. See [the coding specification](docs/mdl-coding.md) for assumptions, exact cost
+terms, limitations and synthetic controls, and [the first results](docs/mdl-results.md).
+Code lengths describe the **training reference code**, conditional on the shared design X;
+they are separate from held-out prediction metrics. Full and selected code decompositions,
+all candidate costs and Plotly figures are exported. MLflow logs these under `training/mdl/`.
 
 ## Scientific rules
 

@@ -10,6 +10,7 @@ import pytest
 from financial_mdl.benchmark import BenchmarkRunner, compare_runs
 from financial_mdl.candidates import make_candidate
 from financial_mdl.cli import main
+from financial_mdl.mdl import ExhaustiveMDLSelector
 from financial_mdl.models import make_estimator
 from financial_mdl.tracking import LocalMLflowTracker
 
@@ -98,3 +99,27 @@ def test_real_local_mlflow_records_params_metrics_and_predictions(
     logged = next(r for r in runs if "persistence-20" in r.data.tags["mlflow.runName"])
     assert logged.data.metrics["validation/rmse"] == persistence.metrics["rmse"]
     assert json.loads(logged.data.params["transformer"])["name"] == "identity"
+    mdl = BenchmarkRunner(tracker).run(
+        dataset,
+        protocol,
+        lambda: make_estimator("ridge"),
+        tmp_path / "mdl",
+        estimator_name="ridge",
+        selector_factory=ExhaustiveMDLSelector,
+    )
+    selection = json.loads((mdl.directory / "selection.json").read_text())
+    logged = next(
+        r
+        for r in client.search_runs([experiment.experiment_id])
+        if r.data.params.get("selector_name") == "exhaustive_mdl"
+    )
+    assert logged.data.params["n_selected_features"] == str(len(mdl.metadata["selected_features"]))
+    assert (
+        logged.data.metrics["training/mdl/selected/total_bits"]
+        == selection["selected"]["total_bits"]
+    )
+    assert logged.data.metrics["validation/rmse"] == mdl.metrics["rmse"]
+    assert "validation/total_bits" not in logged.data.metrics
+    assert "mdl_candidates.parquet" in {
+        Path(a.path).name for a in client.list_artifacts(logged.info.run_id)
+    }

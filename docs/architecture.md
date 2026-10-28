@@ -19,6 +19,8 @@ Kedro is deliberately not a runtime dependency in this initial empty repository.
 | --- | --- |
 | `data` | `MarketDataProvider.load() -> MarketDataset`; strict daily OHLCV and provenance; Parquet and optional yfinance adapters |
 | `features` | Versioned definitions for market/statistical features; family labels reserve fundamental and algorithmic features |
+| `mdl` | Exhaustive scalar Ridge subset selection using a versioned two-part reference code |
+| `mdl_experiment` | Separate controlled synthetic regression study, with held-out errors and selection frequencies |
 | `targets` | Future volatility from complete future log-return windows, independently of models |
 | `schemas` | Frozen target specification; validated forecast coordinates, label windows, and `(N,H,K)` values |
 | `contracts` | `BaseModel`, `FeatureSelector`, `FeatureTransformer`, `ForecastStrategy`, `Tracker` Protocols |
@@ -38,6 +40,11 @@ maps these to `(N,1,1)`; it never guesses from total element count.
 
 `FeatureSelector`: `fit(X_train, y_train)`, `transform(X)`, `get_selected_features()`,
 `get_params()`. The target supplied to selectors is explicitly `(N,H,K)`.
+The MDL v1 selector accepts scalar targets only, exhaustively searches all subsets, and may
+return an empty tuple. Ridge then explicitly reduces to the intercept-only training mean;
+scaling preserves the zero-column matrix without injecting a fake feature. Unsupported
+estimator adapters reject empty subsets. Optional selection diagnostics are exported as
+artifacts; they do not change the benchmark's metric definitions or evaluation periods.
 `FeatureTransformer`: `fit(X_train)`, `transform(X)`, `get_params()`; it preserves labeled rows
 and columns. Identity selection, identity transformation and standardization are implemented.
 Standardized DataFrames carry a transform marker so a persistence model can reject inputs
@@ -151,23 +158,25 @@ No SEC ingestion or fundamental alignment is implemented in this iteration.
 
 ## Research stages and deferred work
 
-1. **A: controlled synthetic data.** Predictive, redundant and random features to test whether
-   future selectors recover information. The current synthetic market generator is only an
-   offline smoke fixture; it is not evidence of MDL feature recovery.
+1. **A: controlled synthetic data.** The `mdl-synthetic` command evaluates informative,
+   redundant and noise features across fixed seeds, including noise-only and weak-signal
+   controls. This independent regression experiment is separate from the synthetic market
+   generator used for offline smoke fixtures. See [the coding specification](mdl-coding.md).
 2. **B: real market forecasting.** Frozen SPY daily OHLCV, causal indicators and future five-day
-   volatility. Compare naive, Ridge and trees under the same saved benchmark.
+   volatility. Compare mean/persistence baselines, full Ridge and Ridge with MDL under one
+   saved benchmark. A tree estimator is also available as a separate candidate.
 3. **C: company fundamentals and combined data.** Only after publication-time alignment,
    accounting mappings, historical universes and panel leakage controls are implemented.
 
-Later selectors may use correlation, mutual information, or a documented MDL coding scheme.
-An MDL objective must separately account for model code length, feature-subset code length,
-and conditional target code length, for example `L(subset) + L(model | subset) + L(y | model,X)`.
-An arbitrary compression score is not an exact description length or Kolmogorov complexity.
-Any coding parameters learned from data must respect the same training-only protocol.
+The first MDL selector uses `L(subset) + L(model | subset,X) + L(y | model,subset,X)`.
+Its actual binary64 parameter words, target-grid precision and discrete residual distribution
+are documented in [mdl-coding.md](mdl-coding.md). It implements a particular two-part code,
+not optimal MDL or Kolmogorov complexity. Correlation/MI selectors and alternative coding
+schemes remain extensions. Any coding parameters learned from data use training data only.
 
-CatBoost/XGBoost, joint outputs, recursion, rolling CV, SEC ingestion, MDL implementation,
-feature-selection frequencies, complexity/error plots and code-length decomposition await
-their actual underlying algorithms. Fitted coefficients (in transformed feature space) and
+CatBoost/XGBoost, joint outputs, recursion, rolling CV and SEC ingestion remain extensions.
+MDL code decomposition, training complexity/error plots and synthetic selection frequencies
+are available for the implemented reference code. Fitted coefficients (in transformed feature space) and
 tree impurity importances are exported when available, labeled by meaning and fitted model
 index. No importance is fabricated for the mean baseline. Deep learning, options valuation,
 registries, tuning platforms and production
