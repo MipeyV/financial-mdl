@@ -6,10 +6,11 @@ import argparse
 from pathlib import Path
 
 from financial_mdl.benchmark import BenchmarkRunner, compare_runs
+from financial_mdl.candidates import make_candidate
 from financial_mdl.data import ParquetMarketDataProvider, YFinanceMarketDataProvider
 from financial_mdl.experiments import synthetic_market
 from financial_mdl.forecasting import DirectMultiHorizonStrategy, OneStepStrategy
-from financial_mdl.models import make_estimator
+from financial_mdl.models import ESTIMATOR_NAMES
 from financial_mdl.protocol import BenchmarkConfig, TemporalSplit
 from financial_mdl.schemas import TargetSpec
 from financial_mdl.tracking import LocalMLflowTracker
@@ -37,7 +38,7 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--data", type=Path, required=True)
     run.add_argument("--protocol", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
-    run.add_argument("--estimator", choices=["naive", "ridge", "tree"], required=True)
+    run.add_argument("--estimator", choices=ESTIMATOR_NAMES, required=True)
     run.add_argument("--strategy", choices=["one-step", "direct"], default="one-step")
     run.add_argument("--phase", choices=["validation", "test"], default="validation")
     run.add_argument("--seed", type=int, default=42)
@@ -86,14 +87,21 @@ def _execute(args: argparse.Namespace) -> None:
         print(f"Saved immutable protocol {protocol.fingerprint}")
     elif args.command == "run":
         tracker = LocalMLflowTracker(args.tracking_root) if args.tracking else None
+        protocol = BenchmarkConfig.load(args.protocol)
+        estimator_factory, transformer_factory = make_candidate(
+            args.estimator,
+            args.seed,
+            annualization=protocol.target.annualization,
+        )
         result = BenchmarkRunner(tracker).run(
             ParquetMarketDataProvider(args.data).load(),
-            BenchmarkConfig.load(args.protocol),
-            lambda: make_estimator(args.estimator, args.seed),
+            protocol,
+            estimator_factory,
             args.output,
             estimator_name=args.estimator,
             seed=args.seed,
             phase=args.phase,
+            transformer_factory=transformer_factory,
             strategy_factory=(
                 OneStepStrategy if args.strategy == "one-step" else DirectMultiHorizonStrategy
             ),
@@ -119,12 +127,14 @@ def _execute(args: argparse.Namespace) -> None:
         runs = []
         for name in ("naive", "ridge"):
             directory = args.output / name
+            estimator_factory, transformer_factory = make_candidate(name)
             BenchmarkRunner().run(
                 data,
                 protocol,
-                lambda name=name: make_estimator(name),
+                estimator_factory,
                 directory,
                 estimator_name=name,
+                transformer_factory=transformer_factory,
             )
             runs.append(directory)
         print(compare_runs(runs, args.output / "comparison").to_string(index=False))

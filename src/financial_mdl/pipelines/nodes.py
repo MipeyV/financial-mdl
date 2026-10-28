@@ -6,9 +6,9 @@ No pipeline registry is installed yet. See docs/architecture.md for catalog boun
 from pathlib import Path
 
 from financial_mdl.benchmark import BenchmarkResult, BenchmarkRunner
+from financial_mdl.candidates import make_candidate
 from financial_mdl.data import MarketDataset, ParquetMarketDataProvider
 from financial_mdl.forecasting import DirectMultiHorizonStrategy, OneStepStrategy
-from financial_mdl.models import make_estimator
 from financial_mdl.protocol import BenchmarkConfig
 
 
@@ -27,14 +27,20 @@ def run_benchmark(
 ) -> BenchmarkResult:
     """candidate is a Kedro parameters mapping, separate from the benchmark catalog entry."""
     name, seed = candidate["estimator"], candidate.get("seed", 42)
+    estimator_factory, transformer_factory = make_candidate(
+        name,
+        seed,
+        annualization=protocol.target.annualization,
+    )
     strategies = {"one_step": OneStepStrategy, "direct": DirectMultiHorizonStrategy}
     return BenchmarkRunner().run(
         dataset,
         protocol,
-        lambda: make_estimator(name, seed),
+        estimator_factory,
         Path(candidate["output"]),
         estimator_name=name,
         seed=seed,
+        transformer_factory=transformer_factory,
         phase=candidate.get("phase", "validation"),
         strategy_factory=strategies[candidate.get("strategy", "one_step")],
     )

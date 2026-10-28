@@ -32,9 +32,9 @@ end date is exclusive. Every protocol binds the exact snapshot using SHA-256.
 ```powershell
 uv sync --extra market --extra tracking
 uv run financial-mdl fetch --asset SPY --start 2015-01-01 --end 2026-01-01 --dataset-version spy-daily-v1 --output data/spy.parquet
-uv run financial-mdl protocol --data data/spy.parquet --output protocols/spy-volatility-v1.json --id spy-volatility --train-start 2015-01-01 --train-end 2021-12-31 --validation-end 2023-12-31 --test-end 2025-12-31
-uv run financial-mdl run --data data/spy.parquet --protocol protocols/spy-volatility-v1.json --estimator naive --output artifacts/spy-naive --tracking
-uv run financial-mdl run --data data/spy.parquet --protocol protocols/spy-volatility-v1.json --estimator ridge --output artifacts/spy-ridge --tracking
+uv run financial-mdl protocol --data data/spy.parquet --output protocols/spy-local-volatility-v1.json --id spy-volatility --train-start 2015-01-01 --train-end 2021-12-31 --validation-end 2023-12-31 --test-end 2025-12-31
+uv run financial-mdl run --data data/spy.parquet --protocol protocols/spy-local-volatility-v1.json --estimator naive --output artifacts/spy-naive --tracking
+uv run financial-mdl run --data data/spy.parquet --protocol protocols/spy-local-volatility-v1.json --estimator ridge --output artifacts/spy-ridge --tracking
 uv run financial-mdl compare artifacts/spy-naive artifacts/spy-ridge --output artifacts/spy-comparison --tracking
 ```
 
@@ -43,6 +43,30 @@ target, splits, metric implementation and training-only standardization. The nai
 predicts the training target mean. `--estimator tree` uses a seeded random forest. No implicit
 clipping of negative volatility forecasts is performed. Hyperparameters belong to estimator
 factories, not to the benchmark definition. Python usage is in [architecture.md](docs/architecture.md).
+
+`protocols/spy-volatility-v1.json` is a versioned reference bound to the original snapshot.
+A fresh download has its own provenance and fingerprint: the commands above create a new
+local protocol file. Use new snapshot, protocol and output paths when repeating a study.
+
+### Persistence references
+
+Two stronger references carry forward trailing realized volatility at each forecast origin:
+`persistence-5` uses the last 5 observed sessions and `persistence-20` the last 20. They learn
+no relationship from the training targets. Run them under exactly the same saved protocol:
+
+```powershell
+uv run financial-mdl run --data data/spy.parquet --protocol protocols/spy-local-volatility-v1.json --estimator persistence-5 --output artifacts/spy-persistence-5 --tracking
+uv run financial-mdl run --data data/spy.parquet --protocol protocols/spy-local-volatility-v1.json --estimator persistence-20 --output artifacts/spy-persistence-20 --tracking
+uv run financial-mdl compare artifacts/spy-naive artifacts/spy-persistence-5 artifacts/spy-persistence-20 artifacts/spy-ridge --output artifacts/spy-reference-comparison --tracking
+```
+
+Persistence uses an identity transform to retain volatility units; the existing learned
+estimators keep training-only standardization. All protocol features still determine the
+common eligible origins. The source feature is recorded in estimator parameters, and its
+252-session annualization is converted explicitly if the target uses another scale.
+For direct multi-horizon forecasting, every horizon receives the same current volatility
+estimate. Python and Kedro node entry points share the same candidate factories; custom
+Python calls should use `make_candidate` or supply `IdentityFeatures` for persistence.
 
 The default phase is **validation**. Select a candidate using validation results, then evaluate
 that frozen candidate once with `--phase test` in a new output directory. The runner fits only
