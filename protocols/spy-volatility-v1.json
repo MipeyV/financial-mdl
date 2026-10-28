@@ -1,0 +1,48 @@
+{
+  "benchmark_id": "spy-volatility",
+  "version": "1",
+  "dataset_version": "spy-daily-v1",
+  "dataset_fingerprint": "b5d1607f6df78ee0fcba7d1fef7d09081e703e5671961aa81fbbacbbcd398409",
+  "assets": [
+    "SPY"
+  ],
+  "target": {
+    "horizons": [
+      5
+    ],
+    "target_names": [
+      "realized_volatility"
+    ],
+    "aggregation": "sqrt_annualized_mean_squared_log_return",
+    "annualization": 252,
+    "version": "1"
+  },
+  "split": {
+    "train_start": "2015-01-01",
+    "train_end": "2021-12-31",
+    "validation_end": "2023-12-31",
+    "test_end": "2025-12-31",
+    "gap_sessions": 0,
+    "strategy": "fixed_chronological_holdout",
+    "purging": "label_end_at_or_before_partition_end_minus_gap"
+  },
+  "feature_names": [
+    "log_return_1",
+    "log_return_5",
+    "volume_change_1",
+    "realized_volatility_5",
+    "realized_volatility_20"
+  ],
+  "feature_families": [
+    "MarketFeatures",
+    "StatisticalFeatures"
+  ],
+  "feature_implementation_version": "1",
+  "feature_eligibility_policy": "complete_cases_across_all_protocol_features",
+  "forecast_origin_policy": "after_session_close",
+  "metrics": [
+    "mae",
+    "rmse"
+  ],
+  "metric_implementation_version": "1"
+}
