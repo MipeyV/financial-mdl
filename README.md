@@ -19,6 +19,11 @@ uv run ruff format --check .
 `uv.lock` pins dependencies. Core tests use synthetic data and require neither a network
 connection nor MLflow. Optional integrations: `uv sync --extra market --extra tracking`.
 
+Changes use dedicated branches (`feature/...`, `fix/...`, `chore/...`, etc.) and PRs into
+`main`. GitHub Actions checks lint, formatting, package builds, offline tests on Linux
+(Python 3.11–3.13) and Windows (3.12), and local MLflow integration. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and local commands.
+
 ## Primary experiment: real SPY daily market data
 
 Download once, then freeze the Parquet snapshot and its provenance sidecar. The vendor's
