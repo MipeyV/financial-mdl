@@ -1,0 +1,61 @@
+{
+  "study_id": "spy-final-test-v1",
+  "protocol_path": "protocols/spy-volatility-v1.json",
+  "protocol_fingerprint": "f1a43c3374bfcec6c4af477a56538207b5fce7e8e5e6df6bf213be7a7bd56c8e",
+  "dataset_path": "data/spy.parquet",
+  "dataset_fingerprint": "b5d1607f6df78ee0fcba7d1fef7d09081e703e5671961aa81fbbacbbcd398409",
+  "phase": "test",
+  "seed": 42,
+  "strategy": "one-step",
+  "training_policy": "original training partition only; no refit on validation",
+  "validation_reference_commit": "883e54fe5addcdee2c90c6cd1181e2d1263eb107",
+  "candidates": [
+    {
+      "id": "full",
+      "estimator": "ridge",
+      "selector": "identity",
+      "transformer": "standard_scaler",
+      "ridge_alpha": 1.0,
+      "validation_run": "artifacts/spy-mdl-v1/full"
+    },
+    {
+      "id": "mdl",
+      "estimator": "ridge",
+      "selector": "exhaustive_mdl",
+      "transformer": "standard_scaler",
+      "ridge_alpha": 1.0,
+      "coding_version": "ridge_binary64_geometric_v1",
+      "target_precision": 0.0001,
+      "max_features": 12,
+      "expected_selected_features": [
+        "log_return_5",
+        "realized_volatility_5",
+        "realized_volatility_20"
+      ],
+      "expected_selected_training_bits": 20045,
+      "expected_full_training_bits": 20157,
+      "validation_run": "artifacts/spy-mdl-v1/mdl"
+    },
+    {
+      "id": "persistence-20",
+      "estimator": "persistence-20",
+      "selector": "identity",
+      "transformer": "identity",
+      "window_sessions": 20,
+      "consumed_feature": "realized_volatility_20",
+      "validation_run": "artifacts/spy-mdl-v1/persistence-20"
+    }
+  ],
+  "evaluation": {
+    "primary_metric": "rmse",
+    "secondary_metric": "mae",
+    "reference_candidate": "full",
+    "mdl_relative_rmse_tolerance": 0.02,
+    "rule": "RMSE_mdl / RMSE_full <= 1.02; descriptive, not statistical non-inferiority",
+    "expected_test_origins": 497,
+    "retune_after_test": false,
+    "cross_phase_pooling": false
+  },
+  "output_root": "artifacts/spy-final-test-v1",
+  "tracking_root": "artifacts/mlflow"
+}
