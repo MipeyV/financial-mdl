@@ -124,6 +124,8 @@ uv run financial-mdl mdl-frontier --config experiments/mdl-frontier-v1.json --ou
 
 The [presentation notes](docs/presentation-notes.md) connect the research question, explicit
 code, synthetic controls, sensitivity results and financial validation, with interpretation limits.
+An editable [seven-minute presentation](presentations/financial-mdl/README.md) includes six
+main slides, speaker notes and four hidden appendices for questions, using the final test results.
 
 Code lengths describe the **training reference code**, conditional on the shared design X;
 they are separate from held-out prediction metrics. Full and selected code decompositions,
