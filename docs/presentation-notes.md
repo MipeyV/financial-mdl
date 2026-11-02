@@ -37,7 +37,9 @@ comme une simulation réaliste du marché.
 
 ## 4. Le graphique MDL–RMSE
 
-Support : `artifacts/mdl-frontier-v1/signal-all.png`, puis `signal-zoom.png`.
+Support : [vue complète](figures/mdl-frontier-v1/signal-all.svg), puis
+[zoom](figures/mdl-frontier-v1/signal-zoom.svg). Les PNG correspondants sont disponibles dans
+`artifacts/mdl-frontier-v1` pour l'insertion dans les diapositives.
 
 - Chaque point est un sous-ensemble nommé, moyenné sur les mêmes cinq graines.
 - Aller à gauche raccourcit le code d'entraînement ; descendre réduit la RMSE hors entraînement.

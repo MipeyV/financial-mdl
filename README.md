@@ -117,6 +117,9 @@ PNG/SVG figures, with full/constant/MDL references and all seeds retained:
 uv run financial-mdl mdl-frontier --config experiments/mdl-frontier-v1.json --output artifacts/mdl-frontier-v1
 ```
 
+The [presentation notes](docs/presentation-notes.md) connect the research question, explicit
+code, synthetic controls, sensitivity results and financial validation, with interpretation limits.
+
 Code lengths describe the **training reference code**, conditional on the shared design X;
 they are separate from held-out prediction metrics. Full and selected code decompositions,
 all candidate costs and Plotly figures are exported. MLflow logs these under `training/mdl/`.

@@ -56,3 +56,46 @@ the complete configuration, source/runtime provenance and fingerprint before fit
 The synthetic held-out block is now inspected for all candidates. These are exploratory
 diagnostics, not a fresh test set for selecting a new model. Keep any ensuing model changes
 separate from claims about the reserved financial final test.
+
+## Observed results
+
+The complete 960-evaluation run used clean source commit
+`89d46dc4b5f01ab6440e8c1841ca24f208963070` and experiment fingerprint
+`7b1376c76e639dbb53d174bc3bd52af23a97a09733451d42435c0c777701686b`.
+The [192-row summary](results/mdl-frontier-v1-summary.csv) and six SVG figures are versioned;
+per-seed records, diagnostics, interactive HTML and PNG files remain in the local output folder.
+Results for full Ridge and the selected model reproduce the original synthetic controls.
+
+| Scenario | MDL feature count | Mean full code, bits | Mean MDL code, bits | Full Ridge mean RMSE | Selected mean RMSE |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Strong signals + redundancy | 2 | 8,950.8 | 8,701.0 | 0.407826 | 0.406789 |
+| Noise only | 0 | 8,950.8 | 8,569.8 | 0.407890 | 0.406934 |
+| Weak signal | 0 | 8,950.8 | 8,576.6 | 0.407888 | 0.407029 |
+
+MDL selects the same named subset in all five seeds of each scenario. Strong-signal models
+retain `signal_a` and `signal_b`; the other scenarios select the constant. These are code-based
+decisions, not the minima of the displayed held-out errors.
+
+![All subsets: strong signals and redundancy](figures/mdl-frontier-v1/signal-all.svg)
+
+The complete view shows the substantial predictive error from omitting a strong signal.
+The narrow low-error cluster contains models retaining the informative variables, with
+different amounts of redundant/noise input. Their errors are close but their code lengths differ.
+
+![Predictive zoom: strong signals and redundancy](figures/mdl-frontier-v1/signal-zoom.svg)
+
+In the zoom, the selected two-feature model has a shorter code than full Ridge and a slightly
+lower mean held-out RMSE. A three-feature model including `noise_1` obtains an even smaller
+mean RMSE, 0.406669, than the selected model's 0.406789. In noise-only data, the smallest
+displayed mean RMSE, 0.406643, belongs to `signal_b, noise_1`, even though neither predicts
+the target in the generator. These small differences illustrate why inspection of held-out
+scores is diagnostic and must not silently replace the training selection rule. No new
+candidate or coding configuration was selected from these scores.
+
+For the other scenarios, see the [noise-only complete view](figures/mdl-frontier-v1/noise_only-all.svg),
+[noise-only zoom](figures/mdl-frontier-v1/noise_only-zoom.svg),
+[weak-signal complete view](figures/mdl-frontier-v1/weak_signal-all.svg) and
+[weak-signal zoom](figures/mdl-frontier-v1/weak_signal-zoom.svg).
+The five-seed mean improvements over full Ridge are small and do not establish statistical
+superiority. The larger sensitivity experiment, rather than this single 600-row configuration,
+explains when the weak signal can repay its representation cost.
