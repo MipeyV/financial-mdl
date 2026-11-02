@@ -90,3 +90,8 @@ The supported conclusion is narrow: **this explicit code selected a smaller Ridg
 with slightly better held-out performance in the tested controls and the SPY validation
 period**. A different code, richer feature universe, another market regime or final test may
 produce a different outcome. The current evidence does not establish a general MDL advantage.
+
+The follow-up [synthetic sensitivity study](mdl-sensitivity.md) reports the full predeclared
+sample-size/precision grid. It shows that the weak predictor can repay its code cost with
+more training data, and that coarse target precision can change this decision. It does not
+evaluate the reserved SPY test or replace the original financial coding specification.

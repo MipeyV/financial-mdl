@@ -13,6 +13,7 @@ from financial_mdl.experiments import synthetic_market
 from financial_mdl.forecasting import DirectMultiHorizonStrategy, OneStepStrategy
 from financial_mdl.mdl import ExhaustiveMDLSelector, MDLCodingSpec
 from financial_mdl.mdl_experiment import run_synthetic_mdl
+from financial_mdl.mdl_sensitivity import SensitivityConfig, run_mdl_sensitivity
 from financial_mdl.models import ESTIMATOR_NAMES
 from financial_mdl.protocol import BenchmarkConfig, TemporalSplit
 from financial_mdl.schemas import TargetSpec
@@ -59,6 +60,11 @@ def parser() -> argparse.ArgumentParser:
     synthetic = commands.add_parser("mdl-synthetic", help="Run independent synthetic MDL controls")
     synthetic.add_argument("--output", type=Path, required=True)
     synthetic.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
+    sensitivity = commands.add_parser(
+        "mdl-sensitivity", help="Run a predeclared synthetic size/precision grid"
+    )
+    sensitivity.add_argument("--config", type=Path, required=True)
+    sensitivity.add_argument("--output", type=Path, required=True)
     return root
 
 
@@ -130,6 +136,13 @@ def _execute(args: argparse.Namespace) -> None:
     elif args.command == "mdl-synthetic":
         results = run_synthetic_mdl(args.output, seeds=tuple(args.seeds))
         print(results.groupby(["scenario", "method"])[["n_features", "rmse", "total_bits"]].mean())
+    elif args.command == "mdl-sensitivity":
+        results = run_mdl_sensitivity(args.output, SensitivityConfig.load(args.config))
+        print(
+            results.groupby(["scenario", "n_train", "target_precision", "method"])[
+                ["n_features", "rmse", "total_bits"]
+            ].mean()
+        )
     elif args.command == "demo":
         args.output.mkdir(parents=True, exist_ok=False)
         data = synthetic_market()

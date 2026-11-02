@@ -1,0 +1,7 @@
+{
+  "version": "controlled_regression_mdl_sensitivity_v1",
+  "train_sizes": [150, 600, 2400, 9600],
+  "precisions": [0.0001, 0.01, 0.1],
+  "seeds": [0, 1, 2, 3, 4],
+  "n_heldout": 300
+}
