@@ -115,4 +115,6 @@ Five seeds provide exploratory controls, not a significance claim. A weak signal
 exist while failing to repay this code's model cost. Precision may have little influence in
 some regimes; that is a result to report. This study does not vary the parameter encoding,
 prove optimal coding, or choose a new precision for the SPY experiment. The market protocol,
-target, observation dates, temporal boundaries and reserved final test remain unchanged.
+target, observation dates and temporal boundaries remain unchanged. This synthetic study
+does not score the financial test; the subsequent [SPY final evaluation](spy-final-test.md)
+reports that period separately.

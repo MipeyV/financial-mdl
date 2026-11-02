@@ -74,6 +74,11 @@ on the training partition in both phases; it does not refit on validation or tun
 Test results cannot be compared with validation results. The framework prevents accidental
 test scoring by default; it cannot prevent a researcher from repeatedly requesting test runs.
 
+The [frozen SPY final evaluation](docs/spy-final-test.md) has now been completed for full
+Ridge, Ridge with MDL, and persistence 20. MDL retains three rather than five features;
+its final-test RMSE is 0.078818 versus 0.078215 for full Ridge, a 0.77% increase within
+the predeclared exploratory +2% tolerance. Validation and test scores are reported separately.
+
 `--horizons 1 5 10` when creating a protocol and `--strategy direct` when running it evaluate
 separate scalar models for each horizon. A single five-session volatility forecast has shape
 `(N, 1, 1)`, while three requested horizons have shape `(N, 3, 1)`.

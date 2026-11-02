@@ -13,7 +13,8 @@ serialized binary64 parameters on the same held-out block. Standardization is de
 training X only. The empty subset predicts the training target mean.
 
 This yields 960 candidate evaluations. It does not introduce another selector, tune Ridge,
-change the financial protocol, or evaluate the reserved 2024–2025 SPY test.
+change the financial protocol, or evaluate the financial test. The subsequent
+[SPY final evaluation](spy-final-test.md) is a separate experiment.
 
 ## Reading the figures
 
