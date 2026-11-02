@@ -7,6 +7,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 from sklearn.linear_model import Ridge
@@ -18,6 +19,53 @@ from financial_mdl.mdl import ExhaustiveMDLSelector, MDLCodingSpec
 from financial_mdl.metrics import point_metrics
 from financial_mdl.models import SklearnAdapter
 from financial_mdl.reporting import save_figure
+
+SYNTHETIC_SCENARIOS = {
+    "signal": "y=1+2*signal_a-1.5*signal_b+Normal(0,0.4)",
+    "noise_only": "y=1+Normal(0,0.4), independent of X",
+    "weak_signal": "y=1+0.05*signal_a+Normal(0,0.4)",
+}
+
+
+def _evaluate_pair(
+    X_train: pd.DataFrame,
+    y_train: np.ndarray,
+    X_heldout: pd.DataFrame,
+    y_heldout: np.ndarray,
+    spec: MDLCodingSpec,
+) -> tuple[list[dict], dict]:
+    """Select and fit on training only, then evaluate both models on common held-out rows."""
+    selector = ExhaustiveMDLSelector(spec).fit(X_train, y_train)
+    diagnostic = selector.get_diagnostics()
+    rows = []
+    for method, names, code in (
+        ("full", tuple(X_train.columns), diagnostic["full"]),
+        ("mdl", selector.get_selected_features(), diagnostic["selected"]),
+    ):
+        train, heldout = X_train.loc[:, list(names)], X_heldout.loc[:, list(names)]
+        transformer = StandardizeFeatures().fit(train)
+        # Match the reference alpha exactly; there is no hyperparameter search.
+        estimator = SklearnAdapter(Ridge(alpha=spec.ridge_alpha)).fit(
+            transformer.transform(train), y_train
+        )
+        predictions = estimator.predict(transformer.transform(heldout))
+        rows.append(
+            {
+                "method": method,
+                "n_features": len(names),
+                "features": ",".join(names),
+                **{
+                    name: code[name]
+                    for name in ("subset_bits", "model_bits", "target_bits", "total_bits")
+                },
+                "representation_bits": code["subset_bits"] + code["model_bits"],
+                **point_metrics(y_heldout, predictions),
+            }
+        )
+    for row in rows:
+        row["rmse_ratio_to_full"] = row["rmse"] / rows[0]["rmse"]
+        row["within_2pct_tolerance"] = row["rmse_ratio_to_full"] <= 1.02
+    return rows, diagnostic
 
 
 def run_synthetic_mdl(
@@ -50,11 +98,7 @@ def run_synthetic_mdl(
         "seeds": seeds,
         "n_train": n_train,
         "n_validation": n_validation,
-        "scenarios": {
-            "signal": "y=1+2*signal_a-1.5*signal_b+Normal(0,0.4)",
-            "noise_only": "y=1+Normal(0,0.4), independent of X",
-            "weak_signal": "y=1+0.05*signal_a+Normal(0,0.4)",
-        },
+        "scenarios": SYNTHETIC_SCENARIOS,
         "redundancy": "signal_a_copy equals signal_a exactly",
         "noise_features": ["noise_0", "noise_1", "noise_2"],
         "coding_spec": asdict(spec),
@@ -83,60 +127,21 @@ def run_synthetic_mdl(
             data_hash = hashlib.sha256(
                 X.to_numpy(dtype="<f8").tobytes() + y.astype("<f8").tobytes()
             ).hexdigest()
-            selector = ExhaustiveMDLSelector(spec).fit(X.iloc[:n_train], y[:n_train])
-            diagnostic = selector.get_diagnostics()
+            seed_rows, diagnostic = _evaluate_pair(
+                X.iloc[:n_train], y[:n_train], X.iloc[n_train:], y[n_train:], spec
+            )
             (output / f"{scenario}-s{seed}-selection.json").write_text(
                 json.dumps(diagnostic, indent=2, allow_nan=False), encoding="utf-8"
             )
-            seed_rows = []
-            for method, names, code in (
-                ("full", tuple(X.columns), diagnostic["full"]),
-                ("mdl", selector.get_selected_features(), diagnostic["selected"]),
-            ):
-                train, validation = (
-                    X.iloc[:n_train].loc[:, list(names)],
-                    X.iloc[n_train:].loc[:, list(names)],
-                )
-                transformer = StandardizeFeatures().fit(train)
-                # Match the reference alpha exactly; this experiment uses no hyperparameter search.
-                estimator = SklearnAdapter(Ridge(alpha=spec.ridge_alpha)).fit(
-                    transformer.transform(train),
-                    y[:n_train],
-                )
-                predictions = estimator.predict(transformer.transform(validation))
-                scores = point_metrics(y[n_train:], predictions)
-                seed_rows.append(
-                    {
-                        "scenario": scenario,
-                        "seed": seed,
-                        "method": method,
-                        "n_features": len(names),
-                        "features": ",".join(names),
-                        **{
-                            name: code[name]
-                            for name in (
-                                "subset_bits",
-                                "model_bits",
-                                "target_bits",
-                                "total_bits",
-                            )
-                        },
-                        "representation_bits": code["subset_bits"] + code["model_bits"],
-                        "dataset_fingerprint": data_hash,
-                        **scores,
-                    }
-                )
-            reference_rmse = seed_rows[0]["rmse"]
             for row in seed_rows:
-                row["rmse_ratio_to_full"] = row["rmse"] / reference_rmse
-                row["within_2pct_tolerance"] = row["rmse_ratio_to_full"] <= 1.02
+                row.update(scenario=scenario, seed=seed, dataset_fingerprint=data_hash)
             rows.extend(seed_rows)
             frequency.extend(
                 {
                     "scenario": scenario,
                     "seed": seed,
                     "feature": name,
-                    "selected": name in selector.get_selected_features(),
+                    "selected": name in diagnostic["selected_features"],
                 }
                 for name in X.columns
             )

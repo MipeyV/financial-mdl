@@ -102,6 +102,13 @@ uv run financial-mdl mdl-synthetic --output artifacts/mdl-synthetic-v1 --seeds 0
 These commands use the original frozen snapshot. Substitute your own saved protocol for a
 fresh download. See [the coding specification](docs/mdl-coding.md) for assumptions, exact cost
 terms, limitations and synthetic controls, and [the first results](docs/mdl-results.md).
+The [synthetic sensitivity study](docs/mdl-sensitivity.md) varies training size and target
+precision using nested training blocks and a fixed held-out block:
+
+```powershell
+uv run financial-mdl mdl-sensitivity --config experiments/mdl-sensitivity-v1.json --output artifacts/mdl-sensitivity-v1
+```
+
 Code lengths describe the **training reference code**, conditional on the shared design X;
 they are separate from held-out prediction metrics. Full and selected code decompositions,
 all candidate costs and Plotly figures are exported. MLflow logs these under `training/mdl/`.
