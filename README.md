@@ -109,6 +109,14 @@ precision using nested training blocks and a fixed held-out block:
 uv run financial-mdl mdl-sensitivity --config experiments/mdl-sensitivity-v1.json --output artifacts/mdl-sensitivity-v1
 ```
 
+The [MDL–RMSE figures](docs/mdl-frontier.md) evaluate all 64 synthetic feature subsets at
+the original fixed 600/300 configuration. They export interactive HTML and presentation-ready
+PNG/SVG figures, with full/constant/MDL references and all seeds retained:
+
+```powershell
+uv run financial-mdl mdl-frontier --config experiments/mdl-frontier-v1.json --output artifacts/mdl-frontier-v1
+```
+
 Code lengths describe the **training reference code**, conditional on the shared design X;
 they are separate from held-out prediction metrics. Full and selected code decompositions,
 all candidate costs and Plotly figures are exported. MLflow logs these under `training/mdl/`.

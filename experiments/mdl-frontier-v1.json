@@ -1,0 +1,7 @@
+{
+  "version": "synthetic_mdl_frontier_v1",
+  "n_train": 600,
+  "n_heldout": 300,
+  "target_precision": 0.0001,
+  "seeds": [0, 1, 2, 3, 4]
+}

@@ -13,6 +13,7 @@ from financial_mdl.experiments import synthetic_market
 from financial_mdl.forecasting import DirectMultiHorizonStrategy, OneStepStrategy
 from financial_mdl.mdl import ExhaustiveMDLSelector, MDLCodingSpec
 from financial_mdl.mdl_experiment import run_synthetic_mdl
+from financial_mdl.mdl_frontier import FrontierConfig, run_mdl_frontier
 from financial_mdl.mdl_sensitivity import SensitivityConfig, run_mdl_sensitivity
 from financial_mdl.models import ESTIMATOR_NAMES
 from financial_mdl.protocol import BenchmarkConfig, TemporalSplit
@@ -65,6 +66,11 @@ def parser() -> argparse.ArgumentParser:
     )
     sensitivity.add_argument("--config", type=Path, required=True)
     sensitivity.add_argument("--output", type=Path, required=True)
+    frontier = commands.add_parser(
+        "mdl-frontier", help="Plot every synthetic subset's MDL and RMSE"
+    )
+    frontier.add_argument("--config", type=Path, required=True)
+    frontier.add_argument("--output", type=Path, required=True)
     return root
 
 
@@ -142,6 +148,13 @@ def _execute(args: argparse.Namespace) -> None:
             results.groupby(["scenario", "n_train", "target_precision", "method"])[
                 ["n_features", "rmse", "total_bits"]
             ].mean()
+        )
+    elif args.command == "mdl-frontier":
+        results = run_mdl_frontier(args.output, FrontierConfig.load(args.config))
+        print(
+            results.loc[results.selected_by_mdl]
+            .groupby(["scenario", "features"])[["n_features", "total_bits", "heldout_rmse"]]
+            .mean()
         )
     elif args.command == "demo":
         args.output.mkdir(parents=True, exist_ok=False)
