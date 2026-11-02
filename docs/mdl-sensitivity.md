@@ -54,6 +54,55 @@ and lock hash. It exports every subset search as `*-selection.json`, every paire
 figures. Standard deviations describe variation across seeds, not confidence intervals.
 These standalone synthetic outputs do not create financial benchmark or MLflow runs.
 
+## Observed results
+
+The complete declared grid was run from clean commit
+`6cb8e7949f33c52749d1b034234965f017d9b25b` with experiment fingerprint
+`17e1184b376e343cefa9b46c34a7ebd9059f480885bae3736644aa9847efcf76`.
+All 180 searches and 360 full/MDL evaluations completed. The full aggregated table is
+[versioned here](results/mdl-sensitivity-v1-summary.csv); detailed artifacts are local under
+`artifacts/mdl-sensitivity-v1`.
+
+Strong-signal scenarios always select `signal_a` and `signal_b`: two features rather than six,
+for all 60 scenario/size/precision/seed combinations. The exact duplicate and all three noise
+columns are omitted. Noise-only scenarios always select zero features, also across all 60
+combinations. No noise column is selected anywhere in the grid.
+
+The weak-signal selection exposes both sample-size and precision sensitivity:
+
+| Training observations | Precision 0.0001 | Precision 0.01 | Precision 0.1 |
+| ---: | ---: | ---: | ---: |
+| 150 | 0/5 seeds retain signal_a | 0/5 | 0/5 |
+| 600 | 0/5 | 0/5 | 0/5 |
+| 2,400 | 0/5 | 0/5 | 0/5 |
+| 9,600 | 5/5 | 5/5 | 2/5 |
+
+Every weak-signal model is either constant or retains only `signal_a`. For 9,600 rows,
+adding this coefficient costs **67 extra representation bits**: 64 parameter bits and
+3 additional subset-identification bits. At precision 0.0001, the saved target bits are
+99 to 137 across seeds, so every seed repays that cost. At precision 0.1, target savings
+are 60, 47, 121, 73 and 59 bits for seeds 0 through 4. Only seeds 2 and 3 exceed 67 bits.
+This explains the selection directly from the training code, independently of held-out error.
+
+Selected-model RMSE means across five seeds at the largest training size are:
+
+| Scenario | Full Ridge RMSE | MDL RMSE, precision 0.0001 | MDL RMSE, precision 0.01 | MDL RMSE, precision 0.1 |
+| --- | ---: | ---: | ---: | ---: |
+| Strong signals | 0.394573 | 0.394783 | 0.394783 | 0.394783 |
+| Noise only | 0.394584 | 0.394661 | 0.394661 | 0.394661 |
+| Weak signal | 0.394584 | 0.394721 | 0.394721 | 0.395554 |
+
+All **180 paired MDL evaluations** remain within the predeclared +2% RMSE tolerance.
+The worst individual ratio is 1.010757, about **1.08% worse** than full Ridge. MDL does
+not consistently improve prediction error: at 9,600 rows, all three scenario means are
+slightly worse than full Ridge. At smaller sizes, simplicity can reduce error, but these
+five-seed observations do not establish a general predictive advantage.
+
+The supported finding is that this explicit code reliably removes noise/redundancy in these
+controls, while retaining a weak real predictor only when its accumulated coding gain
+repays the representation cost. The coarse grid changes that decision in three of five
+large-sample weak-signal cases. The experiment leaves the original SPY coding choice intact.
+
 ## Interpretation boundaries
 
 Compare description lengths **within** a fixed precision, sample size and dataset. A coarser
