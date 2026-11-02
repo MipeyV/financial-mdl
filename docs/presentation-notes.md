@@ -7,6 +7,18 @@ acceptable ? Nous avons implémenté un code MDL explicite pour des sous-ensembl
 et évalué ses choix sur des contrôles synthétiques puis sur une tâche de volatilité financière.
 Les résultats actuels soutiennent une conclusion locale et exploratoire.
 
+Format : **7 minutes de présentation, puis 3 minutes de questions**. Les sections suivantes
+servent de notes ; un support de six diapositives peut suivre ce découpage :
+
+| Diapositive | Contenu | Durée |
+| --- | --- | ---: |
+| 1 | Question de recherche | 30 s |
+| 2 | Critère MDL et coûts encodés | 1 min |
+| 3 | Protocole : entraînement, validation, test | 1 min |
+| 4 | Contrôles synthétiques et lecture du graphique MDL–RMSE | 2 min |
+| 5 | Résultats financiers : validation puis test final | 1 min 30 |
+| 6 | Conclusion et limites | 1 min |
+
 ## 1. La question et le lien avec le cours
 
 Partir du compromis entre coût du modèle et coût des données qu'il explique mal.
@@ -68,30 +80,39 @@ rembourser ce coût. C'est un effet du volume de données et de la précision du
 À dire : « MDL peut écarter un vrai signal. Notre expérience montre dans quelles conditions
 ce signal devient suffisamment utile pour justifier sa description. »
 
-## 6. Le résultat financier actuel — validation
+## 6. Le résultat financier — validation et test final
 
 SPY quotidien : volatilité RMS des cinq prochaines séances, exprimée en unités annualisées.
 Ce n'est pas une prévision à un an. Entraînement 2015–2021, validation 2022–2023 ; les labels
 doivent se terminer dans leur partition. Tous les candidats utilisent les mêmes dates éligibles.
 
-| Modèle | Variables utilisées | RMSE de validation |
-| --- | ---: | ---: |
-| Moyenne d'entraînement | 0 | 0.093630 |
-| Persistance 20 séances | 1 | 0.069084 |
-| Ridge complet | 5 | 0.066996 |
-| Ridge + MDL | 3 | 0.065489 |
+| Modèle | Variables utilisées | RMSE de validation | RMSE de test |
+| --- | ---: | ---: | ---: |
+| Persistance 20 séances | 1 | 0.069084 | 0.102860 |
+| Ridge complet | 5 | 0.066996 | 0.078215 |
+| Ridge + MDL | 3 | 0.065489 | 0.078818 |
 
 Le modèle sélectionné utilise 40% de variables en moins et améliore la RMSE de validation
 d'environ 2.25% face à Ridge complet. Le code total diminue de 112 bits, soit 0.56%.
 Ces pourcentages décrivent des quantités différentes et doivent être annoncés séparément.
 
-Le test financier 2024–2025 reste réservé à ce stade. Après avoir figé les candidats,
-il faudra ajouter son résultat et le présenter séparément de la validation, même si le gain disparaît.
+Les trois candidats figés ont ensuite été évalués sur les 497 origines communes du test
+2024–2025, sans ajouter la validation à l'entraînement. MDL a une RMSE **0.77% plus élevée**
+que Ridge complet sur le test, ce qui respecte la tolérance exploratoire **+2%**. L'amélioration
+de validation ne se reproduit donc pas comme une amélioration sur test.
+
+Support : [validation et test](figures/spy-final-test-v1/validation-test-rmse.svg) et
+[erreurs finales](figures/spy-final-test-v1/test-metrics.svg). Les PNG sont disponibles dans
+`artifacts/spy-final-test-v1/report`. Le [rapport final](spy-final-test.md) contient les vérifications.
+
+À dire : « Le modèle sélectionné utilise 40% de variables en moins. Sur la période de test
+réservée, sa RMSE augmente de 0.77%, dans notre tolérance déclarée de 2%. Le résultat soutient
+un compromis de simplification, pas une amélioration prédictive générale. »
 
 ## 7. Conclusion et limites à savoir défendre
 
 Le code choisi élimine bruit et redondance dans nos contrôles et fournit un modèle financier
-plus petit avec une meilleure erreur sur la validation étudiée. Une description plus courte
+plus petit, meilleur en validation et légèrement moins bon sur le test final. Une description plus courte
 ne garantit pas une meilleure prédiction. Les paramètres binary64 sont coûteux ; la précision
 et le modèle des résidus influencent les résultats. Les labels financiers se chevauchent et
 les observations ne sont pas indépendantes. Cinq graines et une période de validation ne
@@ -109,3 +130,6 @@ restent des extensions. Leur alignement aux dates réelles de publication est n�
 5. Préparer les réponses sur le code MDL, les baselines et les limites.
 6. Répéter à durée réelle et simplifier les diapositives trop chargées.
 7. Vérifier le support et les figures hors ligne, puis garder une copie exportée.
+
+Les graphiques et l'évaluation finale sont réalisés. La priorité restante est de consolider
+le support, puis de répéter la présentation en sept minutes et de préparer les trois minutes de questions.

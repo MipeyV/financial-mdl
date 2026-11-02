@@ -103,7 +103,8 @@ Unsupported estimator adapters reject empty subsets rather than silently switchi
 
 The original benchmark's data fingerprint, complete-case feature universe, eligibility mask,
 chronological splits, purging and metric versions remain unchanged. Adding a selector is a
-candidate change. The final SPY test period remains reserved for a later explicit evaluation.
+candidate change. The original study reserved the final SPY test period; its subsequent
+explicit fixed-candidate evaluation is documented separately in [the final report](spy-final-test.md).
 
 The exploratory performance tolerance is **+2% RMSE relative to full Ridge**, declared before
 the MDL validation comparison. This is an evaluation rule, not part of the MDL objective or

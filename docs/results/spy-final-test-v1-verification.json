@@ -1,0 +1,45 @@
+{
+  "plan_sha256": "0f9d28c6006faa248addfccbfdf11184ae4808eb5afda313bc3b3a745faf1cae",
+  "test_run_commit": "ebae61c0b09cd0e94776f9fcb17669fb1643ea6b",
+  "protocol_fingerprint": "f1a43c3374bfcec6c4af477a56538207b5fce7e8e5e6df6bf213be7a7bd56c8e",
+  "evaluation_fingerprints": {
+    "validation": "27c70c34f5c1cbafd283c32c582c5f85b5e9d15aead91e20eaa8e5ebc8c3fa1f",
+    "test": "8e0f50d3e01b8223ec55f12abca8ab5cd2732f62f0ab32af0f5b1af9d231d81d"
+  },
+  "matched_observations": 497,
+  "origin_start": "2024-01-02 00:00:00",
+  "origin_end": "2025-12-23 00:00:00",
+  "last_label_end": "2025-12-31 00:00:00",
+  "training_selection_identical_to_validation": true,
+  "candidate_configuration_identical_to_validation": true,
+  "exported_metrics_recomputed": true,
+  "mdl_rmse_ratio_to_full": 1.007708528863568,
+  "within_declared_tolerance": true,
+  "mlflow_runs": [
+    {
+      "id": "6979eba8c0ed4d5ea299d08c80a9a2a0",
+      "name": "spy-volatility-v1-comparison-test",
+      "status": "FINISHED"
+    },
+    {
+      "id": "0ed2ed66a2dc4d36aa7996f0fb1bbf8e",
+      "name": "spy-volatility-v1-persistence-20-test-s42",
+      "status": "FINISHED"
+    },
+    {
+      "id": "471155869f8d4cc8aefd1c676461d99e",
+      "name": "spy-volatility-v1-ridge-exhaustive_mdl-test-s42",
+      "status": "FINISHED"
+    },
+    {
+      "id": "6b158a4040e442eba94f5fb2d6284dab",
+      "name": "spy-volatility-v1-ridge-test-s42",
+      "status": "FINISHED"
+    }
+  ],
+  "prediction_sha256": {
+    "full": "0a9d31824b734fbdad77c1cb4c41cb5105dadc1dd9450fa418862c8d92fffe34",
+    "mdl": "b3a3525838631b1fdc6490a7b7a9a34ae1687eecc77d53d77dcbee65092265db",
+    "persistence-20": "1a7779fbe84fb23497a0a84ae2d8750a068d5a968bc9115ca8826447e35638ec"
+  }
+}

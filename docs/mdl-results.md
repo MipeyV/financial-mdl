@@ -11,7 +11,8 @@ The original SPY snapshot contains 2,766 daily sessions from 2015–2025. Datase
 `b5d1607f6df78ee0fcba7d1fef7d09081e703e5671961aa81fbbacbbcd398409`.
 The saved `spy-volatility` version 1 protocol predicts annualized five-session RMS volatility.
 The training partition has 1,738 eligible origins (2015–2021); validation has 496 (2022–2023).
-The 2024–2025 final test period has not been evaluated.
+This initial study reserved the 2024–2025 final test period. The subsequent
+[frozen final evaluation](spy-final-test.md) now reports that period separately.
 
 | Candidate | Features used | Validation MAE | Validation RMSE |
 | --- | ---: | ---: | ---: |
@@ -90,6 +91,12 @@ The supported conclusion is narrow: **this explicit code selected a smaller Ridg
 with slightly better held-out performance in the tested controls and the SPY validation
 period**. A different code, richer feature universe, another market regime or final test may
 produce a different outcome. The current evidence does not establish a general MDL advantage.
+
+On the subsequent fixed-candidate final test, Ridge + MDL has RMSE 0.078818 versus full
+Ridge's 0.078215: **0.77% higher**, within the predeclared +2% exploratory tolerance.
+Thus the validation improvement is not a repeated predictive improvement on test. The
+smaller model meets the declared performance tolerance on that period; full details and
+phase-separated tables are in [the final report](spy-final-test.md).
 
 The follow-up [synthetic sensitivity study](mdl-sensitivity.md) reports the full predeclared
 sample-size/precision grid. It shows that the weak predictor can repay its code cost with
