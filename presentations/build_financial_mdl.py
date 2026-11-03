@@ -159,7 +159,7 @@ def scatter(slide, rows, *, zoom, position):
                 )
     full = next(row for row in rows if row["is_full"] == "True")
     selected = next(row for row in rows if int(row["selection_count"]) == 5)
-    for label, row in (("Complet", full), ("MDL", selected)):
+    for label, row in (("Full", full), ("MDL", selected)):
         data.add_series(label).add_data_point(
             float(row["mean_total_bits"]), float(row["mean_heldout_rmse"])
         )
@@ -191,8 +191,8 @@ def scatter(slide, rows, *, zoom, position):
             marker.format.line.width = Pt(1.2)
     horizontal, vertical = chart.category_axis, chart.value_axis
     horizontal.has_title = vertical.has_title = True
-    horizontal.axis_title.text_frame.text = "Longueur MDL moyenne (bits)"
-    vertical.axis_title.text_frame.text = "RMSE hors entraînement"
+    horizontal.axis_title.text_frame.text = "Mean MDL length (bits)"
+    vertical.axis_title.text_frame.text = "Held-out RMSE"
     horizontal.tick_labels.number_format = "0"
     vertical.tick_labels.number_format = "0.0000" if zoom else "0.0"
     horizontal.has_major_gridlines = True
@@ -226,8 +226,8 @@ def financial_chart(slide, rows):
     ids = ["full", "mdl", "persistence-20"]
     selected = {row["candidate"]: row for row in rows if row["phase"] == "test"}
     data = CategoryChartData()
-    data.categories = ["Ridge\ncomplet", "Ridge\n+ MDL", "Persistance\n20 séances"]
-    data.add_series("RMSE test", [float(selected[name]["rmse"]) for name in ids])
+    data.categories = ["Full\nRidge", "Ridge\n+ MDL", "Persistence\n20 sessions"]
+    data.add_series("Test RMSE", [float(selected[name]["rmse"]) for name in ids])
     chart = slide.shapes.add_chart(
         XL_CHART_TYPE.COLUMN_CLUSTERED, px(64), px(172), px(770), px(405), data
     ).chart
@@ -236,7 +236,7 @@ def financial_chart(slide, rows):
     chart.value_axis.major_unit = 0.02
     chart.value_axis.tick_labels.number_format = "0.00"
     chart.value_axis.has_title = True
-    chart.value_axis.axis_title.text_frame.text = "RMSE sur le test 2024–2025"
+    chart.value_axis.axis_title.text_frame.text = "RMSE on the 2024–2025 test"
     chart.value_axis.has_major_gridlines = True
     chart.value_axis.major_gridlines.format.line.color.rgb = rgb(GRID)
     chart.plots[0].gap_width = 65
@@ -269,12 +269,12 @@ def build(output):
     deck = Presentation()
     deck.slide_width, deck.slide_height = 12192000, 6858000
     deck.core_properties.title = content["title"]
-    deck.core_properties.subject = "Projet 5AI25 : MDL et prévision de volatilité"
+    deck.core_properties.subject = "5AI25 project: MDL and volatility forecasting"
     deck.core_properties.author = ""
     deck.core_properties.last_modified_by = ""
     deck.core_properties.created = datetime.now(UTC).replace(tzinfo=None)
     deck.core_properties.modified = deck.core_properties.created
-    deck.core_properties.keywords = "MDL, Ridge, sélection de variables, volatilité, SPY"
+    deck.core_properties.keywords = "MDL, Ridge, feature selection, volatility, SPY"
     for index, entry in enumerate(content["slides"]):
         slide = deck.slides.add_slide(deck.slide_layouts[6])
         slide.background.fill.solid()
@@ -301,9 +301,9 @@ def build(output):
             for source in entry["sources"]
         )
         timing = (
-            f"Durée indicative : {entry['duration_seconds']} secondes\n\n"
+            f"Suggested time: {entry['duration_seconds']} seconds\n\n"
             if "duration_seconds" in entry
-            else "Annexe pour les questions\n\n"
+            else "Appendix for questions\n\n"
         )
         slide.notes_slide.notes_text_frame.text = (
             timing + entry["notes"] + "\n\nSources\n" + sources
@@ -313,7 +313,7 @@ def build(output):
             text(slide, entry["title"], 72, 154, 1100, 165, size=46, bold=True)
             text(
                 slide,
-                "Une représentation plus courte\nconserve-t-elle la qualité prédictive ?",
+                "Can a shorter description\npreserve predictive performance?",
                 74,
                 349,
                 1090,
@@ -321,12 +321,12 @@ def build(output):
                 size=29,
                 color=ACCENT,
             )
-            text(slide, "Prévision de volatilité sur SPY", 74, 535, 1050, 48, size=22, color=MUTED)
-            text(slide, "Projet 5AI25, Télécom Paris", 74, 636, 900, 35, size=17, color=MUTED)
+            text(slide, "Volatility forecasting on SPY", 74, 535, 1050, 48, size=22, color=MUTED)
+            text(slide, "5AI25 project, Télécom Paris", 74, 636, 900, 35, size=17, color=MUTED)
         elif kind == "criterion":
             text(
                 slide,
-                "L(S) + L(θ sachant S, X) + L(y sachant θ, S, X)",
+                "L(S) + L(θ given S, X) + L(y given θ, S, X)",
                 72,
                 158,
                 1136,
@@ -336,7 +336,7 @@ def build(output):
             )
             text(
                 slide,
-                "Sous-ensemble, paramètres et cibles quantifiées, en bits",
+                "Feature subset, parameters and quantised targets, in bits",
                 72,
                 233,
                 1136,
@@ -347,9 +347,9 @@ def build(output):
             table(
                 slide,
                 [
-                    ["Modèle", "Identif.", "Paramètres", "Cibles", "Total"],
-                    ["Ridge complet\n5 variables", "3", "448", "19 706", "20 157"],
-                    ["Ridge + MDL\n3 variables", "7", "320", "19 718", "20 045"],
+                    ["Model", "Subset", "Parameters", "Targets", "Total"],
+                    ["Full Ridge\n5 features", "3", "448", "19,706", "20,157"],
+                    ["Ridge + MDL\n3 features", "7", "320", "19,718", "20,045"],
                 ],
                 320,
                 216,
@@ -358,7 +358,7 @@ def build(output):
             )
             text(
                 slide,
-                "112 bits économisés sur l’entraînement",
+                "112 bits saved on training data",
                 72,
                 574,
                 1136,
@@ -369,7 +369,7 @@ def build(output):
             )
             text(
                 slide,
-                "X connu. La RMSE hors entraînement ne sélectionne pas les variables.",
+                "X is known. Held-out RMSE does not select the features.",
                 72,
                 635,
                 1090,
@@ -380,7 +380,7 @@ def build(output):
         elif kind == "protocol":
             text(
                 slide,
-                "SPY quotidien : volatilité des cinq séances suivantes",
+                "Daily SPY: volatility over the next five sessions",
                 72,
                 153,
                 1136,
@@ -390,7 +390,7 @@ def build(output):
             )
             text(
                 slide,
-                "Même snapshot, mêmes dates éligibles et même cible pour tous les candidats",
+                "Same snapshot, eligible dates and target for every candidate",
                 72,
                 219,
                 1136,
@@ -401,16 +401,16 @@ def build(output):
             table(
                 slide,
                 [
-                    ["Entraînement", "Validation", "Test final"],
+                    ["Training", "Validation", "Final test"],
                     [
-                        "2015–2021\n1 738 origines",
-                        "2022–2023\n496 origines",
-                        "2024–2025\n497 origines",
+                        "2015–2021\n1,738 origins",
+                        "2022–2023\n496 origins",
+                        "2024–2025\n497 origins",
                     ],
                     [
-                        "Ajustement et\nsélection MDL",
-                        "Comparaison\ndes approches",
-                        "Candidats\nfigés",
+                        "Fitting and\nMDL selection",
+                        "Comparing\napproaches",
+                        "Frozen\ncandidates",
                     ],
                 ],
                 319,
@@ -420,7 +420,7 @@ def build(output):
             )
             text(
                 slide,
-                "Tolérance exploratoire déclarée : RMSE MDL / RMSE complet ≤ 1,02",
+                "Declared exploratory tolerance: RMSE MDL / RMSE full ≤ 1.02",
                 72,
                 585,
                 1136,
@@ -431,7 +431,7 @@ def build(output):
         elif kind == "synthetic":
             text(
                 slide,
-                "600 observations d’entraînement, 300 d’évaluation, cinq graines",
+                "600 training observations, 300 held out, five seeds",
                 72,
                 131,
                 1136,
@@ -440,10 +440,10 @@ def build(output):
                 color=MUTED,
             )
             scatter(slide, signal, zoom=True, position=(40, 190, 858, 405))
-            text(slide, "Signaux forts", 920, 211, 300, 42, size=21, bold=True)
+            text(slide, "Strong signals", 920, 211, 300, 42, size=21, bold=True)
             text(
                 slide,
-                "2 variables sur 6\nSignaux conservés",
+                "2 of 6 features\nBoth signals retained",
                 920,
                 259,
                 300,
@@ -451,14 +451,13 @@ def build(output):
                 size=21,
                 color=ACCENT,
             )
-            text(slide, "Bruit seul", 920, 381, 300, 38, size=21, bold=True)
-            text(slide, "Modèle constant", 920, 427, 300, 42, size=19, color=MUTED)
-            text(slide, "Signal faible", 920, 502, 300, 38, size=21, bold=True)
-            text(slide, "Constant à n = 600", 920, 548, 300, 42, size=19, color=MUTED)
+            text(slide, "Noise only", 920, 381, 300, 38, size=21, bold=True)
+            text(slide, "Constant model", 920, 427, 300, 42, size=19, color=MUTED)
+            text(slide, "Weak signal", 920, 502, 300, 38, size=21, bold=True)
+            text(slide, "Constant at n = 600", 920, 548, 300, 42, size=19, color=MUTED)
             text(
                 slide,
-                "Point = combinaison, moyenne sur 5 graines. "
-                "Couleur : k variables. Zoom sur de faibles écarts.",
+                "Point = subset, mean over 5 seeds. Colour: k features. Zoom on small differences.",
                 72,
                 628,
                 1136,
@@ -469,7 +468,7 @@ def build(output):
         elif kind == "financial":
             text(
                 slide,
-                "497 prévisions communes sur 2024–2025",
+                "497 common forecast origins in 2024–2025",
                 72,
                 131,
                 1136,
@@ -478,13 +477,13 @@ def build(output):
                 color=MUTED,
             )
             financial_chart(slide, financial)
-            text(slide, "3 variables sur 5", 880, 217, 328, 58, size=26, bold=True)
-            text(slide, "40 % en moins", 880, 287, 328, 59, size=27, color=ACCENT, bold=True)
-            text(slide, f"+{delta:.2f} %".replace(".", ","), 880, 397, 328, 70, size=39, bold=True)
-            text(slide, "de RMSE face\nà Ridge complet", 880, 479, 328, 83, size=21, color=MUTED)
+            text(slide, "3 of 5 features", 880, 217, 328, 58, size=26, bold=True)
+            text(slide, "40% fewer", 880, 287, 328, 59, size=27, color=ACCENT, bold=True)
+            text(slide, f"+{delta:.2f}%", 880, 397, 328, 70, size=39, bold=True)
+            text(slide, "RMSE relative to\nfull Ridge", 880, 479, 328, 83, size=21, color=MUTED)
             text(
                 slide,
-                "Validation : −2,25 % de RMSE. Test : +0,77 %, dans la tolérance de +2 %.",
+                "Validation RMSE: −2.25%. Test: +0.77%, within the +2% tolerance.",
                 72,
                 623,
                 1136,
@@ -495,7 +494,7 @@ def build(output):
         elif kind == "conclusion":
             text(
                 slide,
-                "Un modèle plus court respecte la tolérance\nsur cette période de test",
+                "A shorter model meets the tolerance\non this test period",
                 72,
                 153,
                 1136,
@@ -506,9 +505,9 @@ def build(output):
             )
             text(
                 slide,
-                "Le codage choisi influence la sélection\n"
-                "Une seule série financière, des cibles qui se chevauchent\n"
-                "Pas de supériorité statistique démontrée",
+                "The coding scheme affects selection\n"
+                "One financial series, overlapping targets\n"
+                "No demonstrated statistical superiority",
                 72,
                 333,
                 1136,
@@ -517,7 +516,7 @@ def build(output):
             )
             text(
                 slide,
-                "La compacité et la qualité prédictive se mesurent séparément",
+                "Measure compactness and predictive performance separately",
                 72,
                 587,
                 1136,
@@ -529,10 +528,10 @@ def build(output):
             table(
                 slide,
                 [
-                    ["Terme", "Convention"],
-                    ["Identifier S", "⌈log₂(p + 1)⌉ + ⌈log₂ C(p, k)⌉"],
-                    ["Paramètres", "64 × (k + 2) bits"],
-                    ["Cibles sachant le modèle", "⌈−Σ log₂ P(rᵢ sachant q)⌉"],
+                    ["Term", "Convention"],
+                    ["Identify S", "⌈log₂(p + 1)⌉ + ⌈log₂ C(p, k)⌉"],
+                    ["Parameters", "64 × (k + 2) bits"],
+                    ["Targets given the model", "⌈−Σ log₂ P(rᵢ given q)⌉"],
                 ],
                 164,
                 268,
@@ -541,7 +540,7 @@ def build(output):
             )
             text(
                 slide,
-                "p = 5, k = 3 : identification en 3 + 4 = 7 bits",
+                "p = 5, k = 3: identification costs 3 + 4 = 7 bits",
                 72,
                 471,
                 1136,
@@ -552,8 +551,8 @@ def build(output):
             )
             text(
                 slide,
-                "k coefficients, une constante, un paramètre q\n"
-                "Cibles quantifiées à δ = 0,0001, X connu",
+                "k coefficients, an intercept, a residual parameter q\n"
+                "Targets quantised at δ = 0.0001, with X known",
                 72,
                 545,
                 1136,
@@ -562,9 +561,9 @@ def build(output):
                 color=MUTED,
             )
         elif kind == "sensitivity":
-            values = [["Entraînement", "δ = 0,0001", "δ = 0,01", "δ = 0,1"]]
+            values = [["Training size", "δ = 0.0001", "δ = 0.01", "δ = 0.1"]]
             for size in (150, 600, 2400, 9600):
-                row = [f"{size:,}".replace(",", " ")]
+                row = [f"{size:,}"]
                 for precision in (0.0001, 0.01, 0.1):
                     record = next(
                         r
@@ -578,7 +577,7 @@ def build(output):
                 values.append(row)
             text(
                 slide,
-                "Graines conservant le vrai signal faible",
+                "Seeds retaining the true weak signal",
                 72,
                 141,
                 1136,
@@ -589,7 +588,7 @@ def build(output):
             table(slide, values, 223, 278, [310, 275, 275, 276], font_size=22, highlight=4)
             text(
                 slide,
-                "67 bits supplémentaires à rembourser par le gain de codage",
+                "67 extra representation bits to repay through target coding",
                 72,
                 548,
                 1136,
@@ -600,7 +599,7 @@ def build(output):
             )
             text(
                 slide,
-                "Le codage du cas SPY reste inchangé après cette étude synthétique.",
+                "The synthetic study leaves the SPY coding scheme unchanged.",
                 72,
                 621,
                 1136,
@@ -612,8 +611,7 @@ def build(output):
             scatter(slide, signal, zoom=False, position=(54, 153, 1154, 473))
             text(
                 slide,
-                "Les 64 sous-ensembles sont inclus. "
-                "Les copies exactes créent des points superposés.",
+                "All 64 subsets are included. Exact copies produce overlapping points.",
                 72,
                 639,
                 1136,
@@ -625,11 +623,11 @@ def build(output):
             table(
                 slide,
                 [
-                    ["Mesure", "Portée"],
-                    ["Longueur de description", "Code explicite, conditionnel à X"],
-                    ["Paramètres", "Binary64 réellement sérialisés"],
-                    ["Résidus", "Longueurs calculées, flux binaire non produit"],
-                    ["Tolérance de RMSE", "Règle exploratoire, pas un test statistique"],
+                    ["Measure", "Scope"],
+                    ["Description length", "Explicit code, conditional on X"],
+                    ["Parameters", "Binary64 words actually serialised"],
+                    ["Residuals", "Calculated lengths, no complete residual bitstream"],
+                    ["RMSE tolerance", "Exploratory rule, no statistical test"],
                 ],
                 175,
                 330,
@@ -638,8 +636,8 @@ def build(output):
             )
             text(
                 slide,
-                "Le test final est désormais consulté. Toute évolution informée\n"
-                "par ses scores demande un nouveau plan d’évaluation.",
+                "We have now inspected the final test. Later changes informed\n"
+                "by its scores require a new evaluation plan.",
                 72,
                 560,
                 1136,
@@ -652,8 +650,17 @@ def build(output):
     if output.exists():
         raise FileExistsError(output)
     for slide in deck.slides:
+        for element in slide._element.xpath(".//a:rPr | .//a:defRPr"):
+            element.set("lang", content["language"])
+        for element in slide.notes_slide._element.xpath(".//a:rPr | .//a:defRPr"):
+            element.set("lang", content["language"])
         for shape in slide.shapes:
             if shape.has_chart:
+                language = OxmlElement("c:lang")
+                language.set("val", content["language"])
+                shape.chart._chartSpace.insert(0, language)
+                for element in shape.chart._chartSpace.xpath(".//a:rPr | .//a:defRPr"):
+                    element.set("lang", content["language"])
                 synchronize_chart_caches(shape.chart)
     deck.save(output)
     sources = [

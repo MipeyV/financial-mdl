@@ -1,78 +1,116 @@
 {
-  "title": "Sélection de variables par MDL",
-  "subtitle": "Prévision de volatilité financière",
-  "language": "fr-FR",
+  "title": "MDL feature selection",
+  "subtitle": "Financial volatility forecasting",
+  "language": "en-GB",
   "main_duration_seconds": 420,
   "slides": [
     {
       "id": "question",
-      "title": "Sélection de variables par MDL",
+      "title": "MDL feature selection",
       "duration_seconds": 30,
-      "notes": "Notre question est la suivante : peut-on réduire la description d’un modèle tout en conservant une qualité prédictive acceptable ? Nous étudions cette question avec le principe de longueur de description minimale, ou MDL. Nous avons programmé une sélection de variables, vérifié son comportement sur des données synthétiques, puis évalué un cas financier. Le résultat final montre un compromis de simplification, sans avantage prédictif systématique.",
-      "sources": ["docs/mdl-coding.md", "docs/spy-final-test.md"]
+      "notes": "Can we shorten a model description while preserving acceptable predictive performance? We investigate this question through Minimum Description Length, or MDL. We implemented feature selection, checked its behaviour on synthetic data with known signals, and then evaluated a financial forecasting task. The final result supports a simplification trade-off, with no consistent predictive advantage.",
+      "sources": [
+        "docs/mdl-coding.md",
+        "docs/spy-final-test.md"
+      ]
     },
     {
       "id": "criterion",
-      "title": "Le critère de sélection MDL",
+      "title": "The MDL selection criterion",
       "duration_seconds": 60,
-      "notes": "Le cours présente le MDL comme la somme du coût du modèle et du coût des données sachant ce modèle. Nous avons rendu ce principe calculable. Pour chaque combinaison de variables, nous ajustons un Ridge sur l’entraînement. Nous comptons les bits nécessaires pour identifier les variables, décrire les paramètres et encoder les cibles restantes à une précision fixée. Les valeurs de X sont supposées connues. Le tableau montre le compromis réel : passer de cinq à trois variables augmente légèrement le coût des résidus, mais économise davantage sur les paramètres. Le total passe de 20 157 à 20 045 bits, soit 112 bits économisés. C’est ce total qui sélectionne les variables. La RMSE hors entraînement n’entre pas dans cette décision.",
-      "sources": ["docs/mdl-coding.md", "docs/mdl-results.md", "Cours 5AI25, chapitre 4, diapositives 20–21 et 24–28"]
+      "notes": "The course presents MDL as the cost of describing a model plus the cost of describing the data given that model. We made this principle computable. For each feature combination, we fit Ridge on the training data. We count the bits needed to identify the features, describe the parameters, and encode the remaining target information at a fixed precision. We assume X is known. The table shows the actual trade-off: using three rather than five features slightly increases the residual cost, but saves more on parameters. The total falls from 20,157 to 20,045 bits, saving 112 bits. This training total selects the features. Held-out RMSE plays no part in that decision.",
+      "sources": [
+        "docs/mdl-coding.md",
+        "docs/mdl-results.md",
+        "5AI25 course, chapter 4, slides 20–21 and 24–28"
+      ]
     },
     {
       "id": "protocol",
-      "title": "Un protocole temporel commun",
+      "title": "A common temporal protocol",
       "duration_seconds": 60,
-      "notes": "Le cas réel utilise un snapshot figé de SPY, avec des observations quotidiennes de 2015 à 2025. Après chaque clôture, on prédit la volatilité des cinq séances suivantes. Elle est exprimée en unités annualisées, mais l’horizon reste cinq séances. Tous les candidats partagent les mêmes dates et les mêmes partitions. Les coefficients, la standardisation et la sélection MDL utilisent uniquement 2015 à 2021. La validation 2022–2023 sert à comparer les approches. Nous avons ensuite figé les candidats avant d’évaluer 2024–2025. Les fenêtres des cibles doivent se terminer dans leur partition. Notre règle exploratoire accepte au plus 2 % de RMSE supplémentaire face à Ridge complet. Elle vérifie la performance du choix MDL, sans sélectionner les variables.",
-      "sources": ["protocols/spy-volatility-v1.json", "experiments/spy-final-test-v1.json", "docs/spy-final-test.md"]
+      "notes": "The financial task uses a frozen SPY snapshot with daily observations from 2015 to 2025. After each session close, we predict volatility over the next five trading sessions. Annualisation sets the units, while the forecast horizon remains five sessions. All candidates share the same eligible dates and temporal partitions. Fitting, standardisation and MDL selection use only 2015 to 2021. Validation in 2022 and 2023 supports comparison. We then froze the candidates before evaluating 2024 and 2025. Each target window must end inside its partition. Our exploratory rule allows at most two percent higher RMSE than full Ridge. It evaluates the MDL choice, without selecting the features.",
+      "sources": [
+        "protocols/spy-volatility-v1.json",
+        "experiments/spy-final-test-v1.json",
+        "docs/spy-final-test.md"
+      ]
     },
     {
       "id": "synthetic",
-      "title": "Contrôles synthétiques",
+      "title": "Synthetic controls",
       "duration_seconds": 120,
-      "notes": "Avant le marché, nous vérifions la mécanique sur des données où les variables utiles sont connues. Le premier scénario contient deux vrais signaux, une copie exacte et trois variables de bruit. Avec six variables, on peut tester les 64 sous-ensembles, y compris le modèle constant. Chaque expérience utilise 600 observations d’entraînement et 300 observations séparées, sur cinq graines. Chaque point du graphique correspond à une combinaison précise, moyennée sur ces graines. L’abscisse est la longueur du code calculée sur l’entraînement. L’ordonnée est la RMSE sur les données séparées. La couleur indique le nombre de variables et le carré magenta indique le choix MDL, réalisé indépendamment dans chaque graine. Ici, il conserve les deux signaux et retire le doublon et le bruit. Le carré représente Ridge avec les six variables. Le zoom permet de lire de très petits écarts de RMSE ; la vue complète est en annexe. Une combinaison contenant du bruit peut même obtenir un score légèrement inférieur à celui du carré magenta. Nous ne la choisissons pas après inspection. Les autres contrôles montrent une limite utile : dans le bruit seul, MDL sélectionne la constante. Avec un vrai signal faible, il sélectionne aussi la constante à cette taille d’échantillon. Cela ne prouve pas que le signal est absent : son bénéfice de codage ne rembourse pas encore son coût. L’étude de sensibilité en annexe examine ce point.",
-      "sources": ["experiments/mdl-frontier-v1.json", "docs/results/mdl-frontier-v1-summary.csv", "docs/mdl-frontier.md", "docs/mdl-sensitivity.md"]
+      "notes": "Before studying the market, we test the mechanism where we know which variables matter. The strong-signal scenario has two true signals, an exact copy, and three noise features. Six features give 64 subsets, including the constant model. Each experiment uses 600 training observations and 300 held-out observations, across five seeds. Each point represents one named combination, averaged over those seeds. The horizontal axis shows training code length. The vertical axis shows held-out RMSE. Colour indicates the number of features. The magenta square marks the MDL choice, made independently for each seed. Here it retains both signals and removes redundancy and noise. The outlined square represents full Ridge. The zoom exposes very small RMSE differences, and the appendix shows all combinations. A subset containing noise can even achieve slightly lower held-out RMSE than the magenta square. We do not replace the MDL choice after inspecting that score. In the noise-only control, MDL selects a constant. It also selects a constant for the weak signal at this sample size. This does not establish that the signal is absent. Its coding benefit does not yet repay its representation cost. The sensitivity study in the appendix examines when it becomes worth retaining.",
+      "sources": [
+        "experiments/mdl-frontier-v1.json",
+        "docs/results/mdl-frontier-v1-summary.csv",
+        "docs/mdl-frontier.md",
+        "docs/mdl-sensitivity.md"
+      ]
     },
     {
       "id": "financial",
-      "title": "Résultats sur le test final",
+      "title": "Final test results",
       "duration_seconds": 90,
-      "notes": "Nous comparons trois candidats figés : Ridge complet, Ridge avec la sélection MDL et une persistance qui reprend la volatilité des vingt dernières séances. Les 497 dates du test sont identiques pour tous. Ridge complet obtient une RMSE de 0,078215 et Ridge avec MDL de 0,078818. Le modèle sélectionné conserve trois variables sur cinq : le rendement à cinq séances et les volatilités à cinq et vingt séances. Sa RMSE augmente donc de 0,77 % face à Ridge complet, ce qui reste dans la tolérance de 2 % déclarée avant le test. Sa MAE est également légèrement plus élevée. Les deux Ridge font mieux que la persistance sur cette période. Il faut distinguer ce résultat de la validation, où MDL améliorait la RMSE de 2,25 %. Cette amélioration ne se reproduit pas sur le test. Le résultat final soutient donc une simplification avec un faible coût prédictif, pas une amélioration générale. Aucun candidat n’a été modifié après lecture des scores.",
-      "sources": ["docs/results/spy-final-test-v1-summary.csv", "docs/results/spy-final-test-v1-verification.json", "docs/spy-final-test.md"]
+      "notes": "We compare three frozen candidates: full Ridge, Ridge with MDL selection, and persistence based on the previous twenty sessions. All three use the same 497 test origins. Full Ridge achieves RMSE 0.078215, compared with 0.078818 for MDL. MDL retains three of five features: the five-session return, and volatility over five and twenty sessions. Its test RMSE is therefore 0.77 percent higher than full Ridge, within the two percent tolerance declared before scoring the test. Its MAE is also slightly higher. Both Ridge models outperform persistence on this period. On validation, MDL had reduced RMSE by 2.25 percent. That improvement does not repeat on the test. The final finding is a smaller model with a small predictive cost. We changed no candidate after inspecting the test scores.",
+      "sources": [
+        "docs/results/spy-final-test-v1-summary.csv",
+        "docs/results/spy-final-test-v1-verification.json",
+        "docs/spy-final-test.md"
+      ]
     },
     {
       "id": "conclusion",
-      "title": "Conclusion et limites",
+      "title": "Conclusion and limitations",
       "duration_seconds": 60,
-      "notes": "Notre contribution est une expérience reproductible avec un code de description explicite, des contrôles où la vérité est connue et une évaluation financière finale séparée. Dans ce cas, on retire 40 % des variables et on réduit le code d’entraînement de 112 bits, tout en gardant la RMSE de test dans notre tolérance exploratoire. Ces chiffres décrivent trois quantités différentes. Une description plus courte ne garantit pas une meilleure prédiction. Les paramètres sont codés sur 64 bits, un choix coûteux qui influence la sélection. Nous ne mesurons pas la complexité exacte de Kolmogorov. Enfin, nous étudions une seule série financière, et les cibles à cinq séances se chevauchent. Nous ne revendiquons donc ni supériorité statistique ni résultat universel. La suite scientifique serait de comparer d’autres codages avec un nouveau protocole d’évaluation.",
-      "sources": ["docs/mdl-coding.md", "docs/mdl-sensitivity.md", "docs/spy-final-test.md"]
+      "notes": "Our contribution is a reproducible experiment with an explicit description code, controls with known ground truth, and a separate final financial evaluation. In this case, MDL removes forty percent of the features and saves 112 training bits, while test RMSE stays within our exploratory tolerance. These figures describe different quantities. A shorter description does not guarantee better prediction. Coding parameters on 64 bits is an expensive choice that affects selection. We do not measure exact Kolmogorov complexity. We also study one financial series, with overlapping five-session targets. We therefore make no claim of statistical superiority or universal performance. A useful next study would compare alternative codes under a new evaluation plan.",
+      "sources": [
+        "docs/mdl-coding.md",
+        "docs/mdl-sensitivity.md",
+        "docs/spy-final-test.md"
+      ]
     },
     {
       "id": "coding_details",
-      "title": "Annexe A : le codage en bits",
+      "title": "Appendix A: the code in bits",
       "hidden": true,
-      "notes": "Pour p=5 variables et un sous-ensemble de taille k, notre code réserve ceil(log2(p+1)) bits pour k, puis ceil(log2(C(p,k))) bits pour le rang de la combinaison. Pour k=3, cela donne 3+4=7 bits. Pour toutes les variables, 3+0=3 bits. Les paramètres coûtent 64(k+2) bits : k coefficients, une constante et le paramètre q des résidus. Les cibles sont quantifiées à delta=0,0001 et les résidus entiers suivent un modèle géométrique bilatéral. Leur longueur est le plafond de la somme des -log2 des probabilités. Les paramètres sont effectivement sérialisés ; nous calculons la longueur des résidus sans produire leur flux binaire complet. La reconstruction concerne les symboles quantifiés, avec X connu.",
-      "sources": ["docs/mdl-coding.md", "src/financial_mdl/mdl.py"]
+      "notes": "For p available features and a subset of size k, we reserve ceil(log2(p+1)) bits for k, then ceil(log2(C(p,k))) bits for the combination rank. With p=5 and k=3, this gives 3+4=7 bits. Keeping all five requires 3+0=3 bits. Parameters cost 64(k+2) bits: k coefficients, an intercept, and the residual parameter q. We quantise targets at delta=0.0001 and model integer residuals with a two-sided geometric distribution. Their length is the ceiling of the joint negative log probability. We actually serialise the parameter words. We calculate residual code lengths without producing a complete residual bitstream. Reconstruction concerns the quantised symbols, conditional on known X.",
+      "sources": [
+        "docs/mdl-coding.md",
+        "src/financial_mdl/mdl.py"
+      ]
     },
     {
       "id": "sensitivity",
-      "title": "Annexe B : le signal faible",
+      "title": "Appendix B: the weak signal",
       "hidden": true,
-      "notes": "Le générateur contient un signal réel de coefficient 0,05, avec un bruit d’écart-type 0,4. Les petits échantillons ne permettent pas de rembourser le coût du coefficient. Ajouter la variable coûte 67 bits de représentation : 64 bits de coefficient et trois bits d’identification supplémentaires. À 9 600 observations, elle économise 99 à 137 bits sur les cibles avec la précision 0,0001, donc elle est retenue dans les cinq graines. Avec la précision 0,1, seules deux graines sur cinq remboursent ce coût. La précision et la taille d’échantillon influencent donc le choix. Ces configurations n’ont pas servi à modifier le codage du cas SPY.",
-      "sources": ["docs/results/mdl-sensitivity-v1-summary.csv", "docs/mdl-sensitivity.md", "experiments/mdl-sensitivity-v1.json"]
+      "notes": "The weak-signal generator has coefficient 0.05 and noise standard deviation 0.4. At smaller sample sizes, its benefit cannot repay the coefficient cost. Adding the feature costs 67 representation bits: 64 for its coefficient and three extra subset-identification bits. At 9,600 training observations and precision 0.0001, it saves between 99 and 137 target bits and appears in all five selected subsets. At precision 0.1, only two seeds repay that cost. Sample size and target precision therefore affect selection. These configurations did not change the code used for SPY.",
+      "sources": [
+        "docs/results/mdl-sensitivity-v1-summary.csv",
+        "docs/mdl-sensitivity.md",
+        "experiments/mdl-sensitivity-v1.json"
+      ]
     },
     {
       "id": "full_scatter",
-      "title": "Annexe C : toutes les combinaisons",
+      "title": "Appendix C: all combinations",
       "hidden": true,
-      "notes": "Cette vue conserve toutes les combinaisons du scénario à signaux forts. Les modèles privés d’un des deux signaux ont une erreur nettement supérieure. Plusieurs combinaisons se superposent à cause de la copie exacte. La présence de variables de bruit peut améliorer un score observé par hasard, même sur plusieurs graines. Le choix MDL reste fondé sur l’entraînement ; ces erreurs sont des diagnostics. Les écarts dans le zoom principal ne doivent pas être interprétés comme des gains prédictifs importants.",
-      "sources": ["docs/results/mdl-frontier-v1-summary.csv", "docs/mdl-frontier.md"]
+      "notes": "This view includes all 64 combinations in the strong-signal scenario. Models that omit a strong signal have much higher errors. Some points overlap because one feature is an exact copy. Noise features can improve an observed held-out score by chance, including an average across a few seeds. MDL selection remains based on training data. Held-out scores are diagnostics. The small differences in the main-slide zoom should not be presented as large predictive gains.",
+      "sources": [
+        "docs/results/mdl-frontier-v1-summary.csv",
+        "docs/mdl-frontier.md"
+      ]
     },
     {
       "id": "scope",
-      "title": "Annexe D : portée du résultat",
+      "title": "Appendix D: scope of the result",
       "hidden": true,
-      "notes": "Les coûts portent sur la description conditionnelle des cibles, sachant X, les colonnes et la configuration. Nous ne comptons pas le stockage du snapshot ni la génération des features. Ce code est une convention calculable, pas la complexité exacte non calculable de Kolmogorov et pas un code optimal universel. La tolérance de 2 % n’est ni ajoutée au MDL, ni une preuve statistique de non-infériorité. Ridge ajuste ses coefficients par erreur quadratique régularisée ; MDL choisit la combinaison parmi ces modèles. Le test final a maintenant été inspecté et ne peut plus être présenté comme un nouveau test intact pour des modifications ultérieures. Le protocole, les empreintes de données et les exports de prédictions permettent de vérifier la comparaison.",
-      "sources": ["docs/mdl-coding.md", "docs/spy-final-test.md", "docs/results/spy-final-test-v1-verification.json"]
+      "notes": "Our lengths describe the targets conditional on X, the feature universe and shared configuration. We do not count snapshot storage or feature-generation programs. This is an explicit computable code, with no claim to exact uncomputable Kolmogorov complexity or universal optimality. The two percent tolerance is separate from MDL and establishes no statistical non-inferiority. Ridge fits coefficients through regularised squared error, then MDL selects among those fitted feature combinations. We have now inspected the final test. Later changes informed by its scores require a new evaluation plan. The saved protocol, data fingerprints and prediction exports make the comparison auditable.",
+      "sources": [
+        "docs/mdl-coding.md",
+        "docs/spy-final-test.md",
+        "docs/results/spy-final-test-v1-verification.json"
+      ]
     }
   ]
 }

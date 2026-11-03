@@ -1,7 +1,12 @@
 # Présentation Financial-MDL
 
-Premier support en français : six diapositives principales pour sept minutes, puis quatre
+Support en anglais : six diapositives principales pour sept minutes, puis quatre
 annexes masquées dans le défilement normal pour les trois minutes de questions.
+
+Les slides, légendes, tableaux et notes orales sont en anglais. Le
+[guide pédagogique en français](../../docs/research-walkthrough-fr.md) explique toute la
+démarche, avec les formules, les résultats et les questions possibles. Les
+[notes orales en anglais](speaker-notes-en.md) permettent de répéter sans ouvrir PowerPoint.
 
 Le contenu et les notes sont dans [content.json](content.json). Les graphiques et le tableau
 de sensibilité lisent les CSV de résultats versionnés. Les autres tableaux reprennent le
@@ -12,8 +17,9 @@ Le message final distingue le gain de validation du compromis sur le test : 40% 
 en moins, 112 bits économisés sur l'entraînement et une RMSE de test 0,77% plus élevée que
 Ridge complet, dans la tolérance exploratoire de 2%.
 
-Le fichier final versionné est `presentations/financial-mdl/financial-mdl-v1.pptx`.
-Les rendus et contrôles de construction restent sous `artifacts/presentation-v1/build`.
+Le fichier final versionné est [financial-mdl-en.pptx](financial-mdl-en.pptx).
+Il remplace le premier support français. Les rendus et contrôles de construction restent
+sous `artifacts/presentation-en/build`.
 
 ## Reconstruction
 
