@@ -125,6 +125,9 @@ uv run financial-mdl mdl-frontier --config experiments/mdl-frontier-v1.json --ou
 The [presentation notes](docs/presentation-notes.md) connect the research question, explicit
 code, synthetic controls, sensitivity results and financial validation, with interpretation limits.
 
+The [project report in English](docs/report/README.md) presents the complete method,
+results and limitations, with exact coding conventions and a reproduction-command appendix.
+
 Code lengths describe the **training reference code**, conditional on the shared design X;
 they are separate from held-out prediction metrics. Full and selected code decompositions,
 all candidate costs and Plotly figures are exported. MLflow logs these under `training/mdl/`.
